@@ -1,7 +1,7 @@
 ﻿
 namespace HiPot.AutoTester.Desktop
 {
-    partial class Form1
+    partial class FormMain
     {
         /// <summary>
         /// 設計工具所需的變數。
@@ -29,13 +29,44 @@ namespace HiPot.AutoTester.Desktop
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
+            this.txtISN = new System.Windows.Forms.TextBox();
+            this.lblStatus = new System.Windows.Forms.Label();
+            this.SuspendLayout();
+            // 
+            // txtISN
+            // 
+            this.txtISN.Location = new System.Drawing.Point(180, 103);
+            this.txtISN.Name = "txtISN";
+            this.txtISN.Size = new System.Drawing.Size(375, 29);
+            this.txtISN.TabIndex = 0;
+            // 
+            // lblStatus
+            // 
+            this.lblStatus.AutoSize = true;
+            this.lblStatus.Location = new System.Drawing.Point(180, 46);
+            this.lblStatus.Name = "lblStatus";
+            this.lblStatus.Size = new System.Drawing.Size(50, 18);
+            this.lblStatus.TabIndex = 1;
+            this.lblStatus.Text = "lblStatus";
+            // 
+            // FormMain
+            // 
+            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 18F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 450);
-            this.Text = "Form1";
+            this.ClientSize = new System.Drawing.Size(1245, 897);
+            this.Controls.Add(this.lblStatus);
+            this.Controls.Add(this.txtISN);
+            this.Name = "FormMain";
+            this.Text = "FormMain";
+            this.ResumeLayout(false);
+            this.PerformLayout();
+
         }
 
         #endregion
+
+        private System.Windows.Forms.TextBox txtISN;
+        private System.Windows.Forms.Label lblStatus;
     }
 }
 

@@ -1,20 +1,29 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
+using HiPot.AutoTester.Desktop.Services;
+using HiPot.AutoTester.Desktop.BusinessLogic;
 
 namespace HiPot.AutoTester.Desktop
 {
-    public partial class Form1 : Form
+    public partial class FormMain : Form
     {
-        public Form1()
+        private TestWorkflowManager _manager;
+
+        public FormMain()
         {
             InitializeComponent();
+
+            var serialService = new HiPotSerialService();
+            var sfisService = new SfisService();
+            _manager = new TestWorkflowManager(serialService, sfisService);
+        }
+
+        private async void btnStart_Click(object sender, EventArgs e)
+        {
+            string isn = txtISN.Text;
+            bool isSuccess = await _manager.ExecuteTestAsync(isn);
+
+            lblStatus.Text = isSuccess ? "測試並過站成功" : "失敗";
         }
     }
 }
