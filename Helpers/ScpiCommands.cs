@@ -8,8 +8,7 @@ namespace HiPot.AutoTester.Desktop.Helpers
 {
     public static class ScpiCommands
     {
-        // 1. 啟動測試指令
-        // 依據手冊範例：[:SOURCE]:SAFEty:START[:ONCE]
+        // [:SOURCE]:SAFEty:START[:ONCE]
         public const string StartTest = "SAFE:STAR";
 
         // 2. 停止測試指令 (安全備用)
@@ -19,7 +18,9 @@ namespace HiPot.AutoTester.Desktop.Helpers
         // 依據手冊範例：用於 Polling 判斷狀態是否為 "STOPPED"
         public const string GetStatus = "SAFE:STAT?";
 
-        // 4. 讀取所有步驟的量測數值 (主計量值)
+        public const string GetTestSummary = "SAFE:RES:ALL?";
+
+        // 4. 讀取所有步驟的量測數值
         // 依據手冊範例：用於獲取如 1.5kV, 0.02mA 等實測數據
         public const string GetAllResults = "SAFE:RES:ALL:MMET?";
 

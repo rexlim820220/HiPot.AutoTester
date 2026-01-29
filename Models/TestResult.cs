@@ -4,12 +4,10 @@ namespace HiPot.AutoTester.Desktop.Models
 {
     public class TestResult
     {
-        public string ISN { get; set; } = string.Empty;
-        public double Voltage { get; set; }
-        public double Current { get; set; }
-        public string Judgment { get; set; } = "FAIL"; // PASS or FAIL
+        public string ISN { get; set; }
+        public string Model { get; set; }
+        public string Test_Value { get; set; }
+        public string Result { get; set; }    // PASS / FAIL
         public DateTime TestTime { get; set; }
-
-        public bool IsPass => Judgment.ToUpper().Contains("PASS");
     }
 }

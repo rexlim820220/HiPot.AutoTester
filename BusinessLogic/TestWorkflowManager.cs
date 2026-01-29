@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using HiPot.AutoTester.Desktop.Helpers;
 using HiPot.AutoTester.Desktop.Services;
+using HiPot.AutoTester.Desktop.Interfaces;
 
 namespace HiPot.AutoTester.Desktop.BusinessLogic
 {
@@ -16,7 +17,7 @@ namespace HiPot.AutoTester.Desktop.BusinessLogic
             _sfis = sfis;
         }
 
-        public async Task<bool> ExecuteTestAsync(string isn)
+        public async Task<bool> ExecuteTestAsync(string isn, string model)
         {
             try
             {
@@ -30,30 +31,33 @@ namespace HiPot.AutoTester.Desktop.BusinessLogic
                     await Task.Delay(500); // 避免 CPU 負載過高
                     var status = _instrument.Query(ScpiCommands.GetStatus);
 
-                    // 根據您的儀器手冊，當狀態回傳包含 STOPPED 代表測試結束
+                    // 當狀態回傳包含 STOPPED 代表測試結束
                     if (status.Contains("STOPPED"))
                     {
                         isRunning = false;
                     }
                 }
 
-                // 3. 抓取測量數值
-                var rawData = _instrument.Query(ScpiCommands.GetAllResults);
+                var judgeCode = _instrument.Query(ScpiCommands.GetTestSummary);
+                bool isPass = (judgeCode.Trim() == "116");
 
-                // 4. 解析數據 (將 Raw Data 轉為強型別物件)
-                var result = DataParser.ParseRawData(rawData, isn);
+                // 3. 解析數據 (將 Raw Data 轉為強型別物件)
+                var result = DataParser.ParseRawData(_instrument, isn, model);
 
-                // 5. 執行 SFIS 上傳 (假設您的黑盒子會回傳 bool 或我們可以觀察 result)
-                // 這裡建議檢查：測試是否 Pass 且 SFIS 是否上傳成功
-                bool sfisResult = _sfis.UploadToSfis(result);
+                // 4. 測試是否 Pass 且 SFIS 是否上傳成功
+                bool sfisResult = isPass ? _sfis.UploadToSfis(result): false;
 
                 // 回傳最終結果：只有當測試是 PASS 且 SFIS 上傳成功時才回傳 true
-                return result.IsPass && sfisResult;
+                return sfisResult;
             }
             catch (Exception ex)
             {
                 // 這裡建議記錄 Log，例如：Logger.Write(ex.Message);
                 return false; // 發生任何異常（如通訊中斷）皆視為失敗
+            }
+            finally
+            {
+                _instrument.SendCommand(ScpiCommands.StopTest);
             }
         }
     }
