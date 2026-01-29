@@ -1,6 +1,12 @@
 ﻿using System;
+using System.IO;
+using System.Linq;
+using System.Media;
+using System.Drawing;
 using System.Windows.Forms;
+using System.Threading.Tasks;
 using HiPot.AutoTester.Desktop.Services;
+using HiPot.AutoTester.Desktop.Interfaces;
 using HiPot.AutoTester.Desktop.BusinessLogic;
 
 namespace HiPot.AutoTester.Desktop.UI
@@ -8,13 +14,18 @@ namespace HiPot.AutoTester.Desktop.UI
     public partial class FormMain : Form
     {
         private TestWorkflowManager _manager;
+        private IInstrumentCommunication serialService;
 
         public FormMain()
         {
             InitializeComponent();
-
-            var serialService = new HiPotSerialService();
+#if DEBUG
+            serialService = new MockHiPotService();
+#else
+            serialService = new HiPotSerialService();
+#endif
             var sfisService = new SfisService();
+
             _manager = new TestWorkflowManager(serialService, sfisService);
         }
 
@@ -22,20 +33,52 @@ namespace HiPot.AutoTester.Desktop.UI
         {
             string isn = txtISN.Text;
             string model = lst_TestModel.Text;
+            MessageBox.Show(
+                "High voltage testing is about to begin.\n\nPlease stay away from the output terminals and the device under test (DUT).\n\nEnsure the area is clear and press OK to proceed.",
+                "High Voltage Safety Warning",
+                MessageBoxButtons.OKCancel,
+                MessageBoxIcon.Warning
+            );
             try
             {
-                bool isSuccess = await _manager.ExecuteTestAsync(isn, model);
-                if (!isSuccess)
+                lbl_Result.BackColor = Color.Gray;
+                lbl_Result.ForeColor = Color.White;
+                lbl_Result.Text = "TESTING";
+                var result = await _manager.ExecuteTestAsync(isn, model);
+                dgvResults.Rows.Insert(0, isn, "TEST - " + model, result.Test_Value, result.Result, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                dgvResults.ClearSelection();
+                dgvResults.Rows[0].Selected = true;
+
+                if (result.Result.ToUpper() == "FAIL")
                 {
-                    MessageBox.Show("Test Fail", "Restart again?", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    lbl_Result.BackColor = Color.Red;
+                    lbl_Result.ForeColor = Color.White;
+                    SystemSounds.Hand.Play();
+                    lbl_Result.Text = "FAIL";
+                    DialogResult dr = MessageBox.Show("Restart again?", "Test Fail", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                    if (dr == DialogResult.Yes)
+                    {
+                        lbl_Result.Text = "READY";
+                        lbl_Result.ForeColor = Color.Black;
+                        lbl_Result.BackColor =SystemColors.Control; ; 
+                    }
                 }
-                dgvResults.Rows.Add(isn, model, "", "", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                else
+                {
+                    lbl_Result.BackColor = Color.Green;
+                    lbl_Result.ForeColor = Color.White;
+                    SystemSounds.Asterisk.Play();
+                    lbl_Result.Text = "PASS";
+                    btn_upload.Enabled = true;
+                }
             }
-            catch (Exception ex)
+            catch
             {
-                // 專門捕捉物件未設定參考的錯誤
-                MessageBox.Show($"通訊物件異常：請確認 Serial Port 是否正確初始化。\n錯誤訊息：{ex.Message}",
-                                "系統異常", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                lbl_Result.Text = "READY";
+                lbl_Result.ForeColor = Color.Black;
+                lbl_Result.BackColor = SystemColors.Control; ;
+                MessageBox.Show("Please check HiPot Serial Port settings and cable connection.\n",
+                                "Serial Port Error", MessageBoxButtons.OK, MessageBoxIcon.Stop);
             }
         }
 
@@ -49,6 +92,77 @@ namespace HiPot.AutoTester.Desktop.UI
         private void FormMain_Load(object sender, EventArgs e)
         {
             txtISN.Focus();
+            btn_EditConfig.FlatStyle = FlatStyle.Flat;
+            btn_EditConfig.FlatAppearance.BorderSize = 0;
+            col_ISN.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+            col_TestType.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+            col_Result.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+            col_Time.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            Test_Value.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+
+            try
+            {
+                LoadModelSettings();
+            }
+            catch
+            {
+                MessageBox.Show("Failed to load model configuration.", "System Error");
+            }
+
+            Task.Run(() => {
+                try
+                {
+                    serialService.Connect(null, 9600);
+                }
+                catch
+                {
+                    Invoke(new Action(() =>
+                    {
+                        MessageBox.Show("Fail to detect any device!\nPlease check HiPot Serial Port settings or cable connection.\n",
+                                "Connection failed", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                        Application.Exit();
+                    }));
+                }
+            });
+        }
+
+        private void LoadModelSettings()
+        {
+            string configfilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "models.txt");
+            if (File.Exists(configfilePath))
+            {
+                var models = File.ReadAllLines(configfilePath).Where(l => !string.IsNullOrWhiteSpace(l)).ToArray();
+                lst_TestModel.Items.Clear();
+                lst_TestModel.Items.AddRange(models);
+                if (lst_TestModel.Items.Count > 0) lst_TestModel.SelectedIndex = 0;
+            }
+            else
+            {
+                MessageBox.Show("Configuration file 'models.txt' missing. Using default settings.", "System Hint");
+            }
+        }
+
+        private async void btn_EditConfig_Click(object sender, EventArgs e)
+        {
+            string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "models.txt");
+
+            if (File.Exists(filePath))
+            {
+                btn_EditConfig.Enabled = false;
+
+                await Task.Run(() =>
+                {
+                    using (var process = System.Diagnostics.Process.Start("notepad.exe", filePath))
+                    {
+                        process.WaitForExit();
+                    }
+                });
+
+                LoadModelSettings();
+                btn_EditConfig.Enabled = true;
+
+                MessageBox.Show("Model list updated successfully!", "System Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
         }
     }
 }

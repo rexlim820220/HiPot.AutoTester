@@ -9,27 +9,58 @@ namespace HiPot.AutoTester.Desktop.Services
     {
         private SerialPort _port;
 
-        public void Connect(string portName = "COM5", int baudRate = 9600)
+        private void TryOpenPort(string name, int baud)
         {
-            try
+            if (_port != null && _port.IsOpen) _port.Close();
+            _port = new SerialPort(name, baud, Parity.None, 8, StopBits.One)
             {
-                if (_port != null && _port.IsOpen) return;
-                _port = new SerialPort
-                {
-                    PortName = portName,
-                    BaudRate = baudRate,
-                    Parity = Parity.None,
-                    DataBits = 8,
-                    StopBits = StopBits.One,
-                    Handshake = Handshake.None,
-                    NewLine = "\n"
-                };
-                _port.Open();
-                _port.WriteLine("*CLS");
+                NewLine = "\n",
+                ReadTimeout = 2000,
+                WriteTimeout = 1000
+            };
+            _port.Open();
+        }
+
+        public void Connect(string portName = null, int baudRate = 9600)
+        {
+            if (!string.IsNullOrEmpty(portName))
+            {
+                TryOpenPort(portName, baudRate);
+                return;
             }
-            catch (Exception ex)
+
+            string[] availablePorts = SerialPort.GetPortNames();
+            bool foundDevice = false;
+
+            foreach(string p in availablePorts)
             {
-                throw new Exception($"{ex.Message}");
+                try
+                {
+                    TryOpenPort(p, baudRate);
+                    _port.ReadTimeout = 1000;
+                    _port.WriteLine("*IDN?");
+                    string idn = _port.ReadLine();
+
+                    if (idn.Contains("Chroma"))
+                    {
+                        foundDevice = true;
+                        _port.ReadTimeout = 5000;
+                        break;
+                    }
+                    else
+                    {
+                        _port.Close();
+                    }
+                }
+                catch
+                {
+                    if (_port != null && _port.IsOpen) _port.Close();
+                }
+            }
+
+            if (!foundDevice)
+            {
+                throw new Exception("19032-P was not found in any of the COM ports");
             }
         }
         public void Disconnect()
@@ -47,7 +78,7 @@ namespace HiPot.AutoTester.Desktop.Services
         {
             if (_port == null || !_port.IsOpen)
             {
-                throw new Exception("Serial port 未初始化或尚未開啟連線！");
+                throw new Exception("Serial port is not initialized.");
             }
             try
             {
@@ -55,7 +86,7 @@ namespace HiPot.AutoTester.Desktop.Services
             }
             catch (Exception ex)
             {
-                throw new Exception($"發送指令失敗: {ex.Message}");
+                throw new Exception($"Command sent failed: {ex.Message}");
             }
         }
 

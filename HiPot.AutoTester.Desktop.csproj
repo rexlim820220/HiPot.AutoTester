@@ -54,6 +54,7 @@
     <Compile Include="Models\DeviceConfig.cs" />
     <Compile Include="Models\TestResult.cs" />
     <Compile Include="Services\HiPotSerialService.cs" />
+    <Compile Include="Services\MockHiPotService.cs" />
     <Compile Include="Services\SfisService.cs" />
     <Compile Include="UI\Form1.cs">
       <SubType>Form</SubType>
