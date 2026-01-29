@@ -1,7 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using HiPot.AutoTester.Desktop.Interfaces;
 using HiPot.AutoTester.Desktop.Models;
-using HiPot.AutoTester.Desktop.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace HiPot.AutoTester.Desktop.Helpers
 {
@@ -12,27 +13,46 @@ namespace HiPot.AutoTester.Desktop.Helpers
             var finalResult = new TestResult { ISN = isn, Model = model, TestTime = DateTime.Now };
             List<string> stepDetails = new List<string>();
 
-            int totalSteps = int.Parse(instrument.Query("SAFE:SNUM?"));
-
-            for (int i = 1; i <= totalSteps; i++)
+            string snumRaw = instrument.Query(ScpiCommands.GetSnum).Replace("+", "").Trim();
+            if (!int.TryParse(snumRaw, out int stepCount))
             {
-                var rawData = instrument.Query($"SAFE:FETH? STEP,MODE,OMET");
-                var parts = rawData.Split(',');
+                finalResult.Result = "FAIL";
+                finalResult.Test_Value = "Invalid SNUM response";
+                return finalResult;
+            }
 
-                string mode = parts[1].Trim();
-                double val = ConvertScientificToDouble(parts[2]);
+            if (stepCount > 0)
+            {
+                string modeRaw = instrument.Query(ScpiCommands.GetModeSummary);
+                string resultRaw = instrument.Query(ScpiCommands.GetAllResults);
 
-                string unit = mode == "GB" ? "mΩ" : (mode == "IR" ? "MΩ" : "mA");
-                double displayVal = (mode == "IR") ? val : val * 1000;
+                string[] modeArray = modeRaw.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] resultArray = resultRaw.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
 
-                stepDetails.Add($"{mode}:{displayVal:F2}{unit}");
+                for (int i = 0; i < stepCount; i++)
+                {
+                    string mode = modeArray.Length > i ? modeArray[i].Trim() : "UNKNOWN";
+                    double val = ConvertScientificToDouble(resultArray.Length > i ? resultArray[i].Trim() : "UNKNOWN");
+                    string unit; switch (mode)
+                    {
+                        case "GB": unit = "mΩ"; break;
+                        case "IR": unit = "MΩ"; break;
+                        case "AC": case "DC": unit = "mA"; break;
+                        default:
+                            unit = string.Empty;
+                            break;
+                    }
+                    double displayVal = (mode == "IR") ? val : val * 1000;
+                    string valStr = (val > 1E+30) ? "N/A" : displayVal.ToString("F2");
+                    stepDetails.Add($"{mode}:{valStr} {unit}");
+                }
             }
 
             finalResult.Test_Value = string.Join(", ", stepDetails);
-
-            var code = instrument.Query(ScpiCommands.GetTestSummary);
-            finalResult.Result = (code.Trim() == "116") ? "PASS" : "FAIL";
-
+            string overallResult = instrument.Query(ScpiCommands.GetTestSummary);
+            string[] results = overallResult.Split(',');
+            bool allPass = results.Length == stepCount && results.All(r => r.Trim() == ScpiCommands.PassCode);
+            finalResult.Result = allPass ? "PASS" : "FAIL";
             return finalResult;
         }
 

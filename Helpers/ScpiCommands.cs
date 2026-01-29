@@ -1,32 +1,27 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace HiPot.AutoTester.Desktop.Helpers
+﻿namespace HiPot.AutoTester.Desktop.Helpers
 {
     public static class ScpiCommands
     {
-        // [:SOURCE]:SAFEty:START[:ONCE]
+        // 1. 開始測試指令
         public const string StartTest = "SAFE:STAR";
-
         // 2. 停止測試指令 (安全備用)
         public const string StopTest = "SAFE:STOP";
-
-        // 3. 查詢目前狀態：用於 Polling 判斷狀態是否為 "STOPPED"
+        // 3. 查詢目前狀態 (如 "STOPPED")
         public const string GetStatus = "SAFE:STAT?";
-
+        // 4. 查詢工作記憶體中已設定多少個step (如 +2)
+        public const string GetSnum = "SAFE:SNUM?";
+        // 5. 取得測試總結結果 (如 116, 116)
         public const string GetTestSummary = "SAFE:RES:ALL?";
-
-        // 4. 讀取所有步驟的量測數值：用於獲取如 1.5kV, 0.02mA 等實測數據
+        // 6. 取得測試模式 (如 GB, DC)
+        public const string GetModeSummary = "SAFE:RES:ALL:MODE?";
+        // 7. 讀取所有步驟的量測數值 (如 +6.540001E-02,+9.900000E+37)
         public const string GetAllResults = "SAFE:RES:ALL:MMET?";
-
-        // 5. 系統重置與清除
+        // 8. 系統重置與清除
         public const string Reset = "*RST";
         public const string ClearStatus = "*CLS";
-
-        // 6. 查詢設備身份 (測試通訊用)
+        // 9. 查詢設備身份 (測試通訊用)
         public const string Identification = "*IDN?";
+        // 10. 判定測試是否通過的代碼
+        public const string PassCode = "116";
     }
 }

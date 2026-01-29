@@ -12,12 +12,14 @@ namespace HiPot.AutoTester.Desktop.Services
         public string Query(string command)
         {
             if (command.Contains("SAFE:STAT?")) return "STOPPED";
-            if (command.Contains("SAFE:RES:ALL?")) return "116";
-            if (command.Contains("SAFE:SNUM?")) return "2";
-            if (command.Contains("SAFE:FETH?"))
+            if (command.Contains("SAFE:RES:ALL?")) return "116,52";
+            if (command.Contains("SAFE:SNUM?")) return "+2";
+            if (command.Contains("SAFE:RES:ALL:MODE?")) return "GB, DC";
+            if (command.Contains("*IDN?")) return "MOCK_INSTRUMENT,MODEL_1234,SN0001,1.0";
+            if (command.Contains("SAFE:RES:ALL:MMET?"))
             {
                 var rnd = new Random();
-                return $"1,GB,+{rnd.Next(15, 20)}0000E-03,2,AC,+{rnd.Next(15, 20)}0000E-03";
+                return $"+{rnd.Next(15, 20)}0000E-03,+{rnd.Next(1, 5)}0000E-03";
             }
             return "MOCK_OK";
         }
