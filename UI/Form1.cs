@@ -1,10 +1,10 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 using System.Media;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Threading.Tasks;
+using HiPot.AutoTester.Desktop.Models;
 using HiPot.AutoTester.Desktop.Services;
 using HiPot.AutoTester.Desktop.Interfaces;
 using HiPot.AutoTester.Desktop.BusinessLogic;
@@ -33,17 +33,51 @@ namespace HiPot.AutoTester.Desktop.UI
         {
             string isn = txtISN.Text;
             string model = lst_TestModel.Text;
-            MessageBox.Show(
-                "High voltage testing is about to begin.\n\nPlease stay away from the output terminals and the device under test (DUT).\n\nEnsure the area is clear and press OK to proceed.",
+            if (lst_TestModel.SelectedItem is DeviceConfig selectedConfig)
+            {
+                try
+                {
+                    for (int i = 0; i < selectedConfig.PsuCount; i++)
+                    {
+                        await RunTestAsync(isn, model);
+                    }
+                }
+                catch
+                {
+                    lbl_Result.Text = "READY";
+                    lbl_Result.ForeColor = Color.Black;
+                    lbl_Result.BackColor = SystemColors.Control;
+                    MessageBox.Show("Please check HiPot Serial Port settings and cable connection.\n",
+                                    "Serial Port Error", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                }
+            }
+        }
+
+        private async Task RunTestAsync(string isn, string model)
+        {
+            btn_start.Enabled = false;
+            var dr = MessageBox.Show(
+                "High voltage testing is about to begin.\n\n" +
+                "Please stay away from the output terminals and the device under test (DUT).\n\n" +
+                "Ensure the area is clear and press OK to proceed.",
                 "High Voltage Safety Warning",
                 MessageBoxButtons.OKCancel,
                 MessageBoxIcon.Warning
             );
+            if (dr != DialogResult.OK)
+            {
+                lbl_Result.Text = "READY";
+                lbl_Result.ForeColor = Color.Black;
+                lbl_Result.BackColor = SystemColors.Control;
+                btn_start.Enabled = !string.IsNullOrWhiteSpace(txtISN.Text);
+                return;
+            }
             try
             {
                 lbl_Result.BackColor = Color.Gray;
                 lbl_Result.ForeColor = Color.White;
                 lbl_Result.Text = "TESTING";
+
                 var result = await _manager.ExecuteTestAsync(isn, model);
                 dgvResults.Rows.Insert(0, isn, "TEST - " + model, result.Test_Value, result.Result, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
                 dgvResults.ClearSelection();
@@ -55,12 +89,17 @@ namespace HiPot.AutoTester.Desktop.UI
                     lbl_Result.ForeColor = Color.White;
                     SystemSounds.Hand.Play();
                     lbl_Result.Text = "FAIL";
-                    DialogResult dr = MessageBox.Show("Restart again?", "Test Fail", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-                    if (dr == DialogResult.Yes)
+
+                    DialogResult ra = MessageBox.Show("Restart again?", "Test Fail", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                    if (ra == DialogResult.No)
                     {
                         lbl_Result.Text = "READY";
                         lbl_Result.ForeColor = Color.Black;
-                        lbl_Result.BackColor =SystemColors.Control; ; 
+                        lbl_Result.BackColor = SystemColors.Control;
+                    }
+                    else
+                    {
+                        await RunTestAsync(isn, model);
                     }
                 }
                 else
@@ -69,16 +108,13 @@ namespace HiPot.AutoTester.Desktop.UI
                     lbl_Result.ForeColor = Color.White;
                     SystemSounds.Asterisk.Play();
                     lbl_Result.Text = "PASS";
-                    btn_upload.Enabled = true;
                 }
             }
-            catch
+            finally
             {
-                lbl_Result.Text = "READY";
-                lbl_Result.ForeColor = Color.Black;
-                lbl_Result.BackColor = SystemColors.Control; ;
-                MessageBox.Show("Please check HiPot Serial Port settings and cable connection.\n",
-                                "Serial Port Error", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                txtISN.Clear();
+                txtISN.Focus();
+                btn_start.Enabled = !string.IsNullOrWhiteSpace(txtISN.Text);
             }
         }
 
@@ -131,9 +167,23 @@ namespace HiPot.AutoTester.Desktop.UI
             string configfilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "models.txt");
             if (File.Exists(configfilePath))
             {
-                var models = File.ReadAllLines(configfilePath).Where(l => !string.IsNullOrWhiteSpace(l)).ToArray();
                 lst_TestModel.Items.Clear();
-                lst_TestModel.Items.AddRange(models);
+                foreach (var line in File.ReadAllLines(configfilePath))
+                {
+                    if (string.IsNullOrWhiteSpace(line.Trim())) continue;
+                    var parts = line.Split(',');
+                    string modelName = parts[0].Trim();
+                    if (parts.Length != 2 || string.IsNullOrWhiteSpace(modelName) || !int.TryParse(parts[1], out int psuCount))
+                    {
+                        throw new Exception("Invalid model configuration format.");
+                    }
+                    var config = new DeviceConfig
+                    {
+                        Name = modelName,
+                        PsuCount = psuCount
+                    };
+                    lst_TestModel.Items.Add(config);
+                }
                 if (lst_TestModel.Items.Count > 0) lst_TestModel.SelectedIndex = 0;
             }
             else

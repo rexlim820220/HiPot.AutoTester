@@ -1,8 +1,8 @@
-﻿using HiPot.AutoTester.Desktop.Interfaces;
-using HiPot.AutoTester.Desktop.Models;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Linq;
+using System.Collections.Generic;
+using HiPot.AutoTester.Desktop.Interfaces;
+using HiPot.AutoTester.Desktop.Models;
 
 namespace HiPot.AutoTester.Desktop.Helpers
 {
@@ -44,7 +44,7 @@ namespace HiPot.AutoTester.Desktop.Helpers
                     }
                     double displayVal = (mode == "IR") ? val : val * 1000;
                     string valStr = (val > 1E+30) ? "N/A" : displayVal.ToString("F2");
-                    stepDetails.Add($"{mode}:{valStr} {unit}");
+                    stepDetails.Add(val.ToString() == "N/A"? $"{mode}:{valStr}":$"{mode}:{valStr} {unit}");
                 }
             }
 
