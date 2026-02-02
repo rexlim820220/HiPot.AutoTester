@@ -67,6 +67,7 @@ namespace HiPot.AutoTester.Desktop.UI
                                 );
                             }
                             var res = await RunTestAsync(psu, selectedConfig.PsuCount, isn, model);
+                            Logger.Log($"Test Result - ISN: {res.ISN}, Model: {res.Model}, Item: PSU{psu + 1}, Status: {res.Result}, Value: {res.Test_Value}", "INFO");
                             if (res == null)
                             {
                                 userCancelled = true;
@@ -104,16 +105,19 @@ namespace HiPot.AutoTester.Desktop.UI
                                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                             }
 
-                            string logContent = GenerateLogContent(batchResults);
-                            string ftpfileName = $"{batchResults.Last().ISN}_{DateTime.Now:yyyyMMddHHmmss}.log";
+                            if (selectedConfig.PsuCount > 1)
+                            {
+                                string logContent = GenerateLogContent(batchResults);
+                                string ftpfileName = $"{batchResults.Last().ISN}.log";
 
-                            try
-                            {
-                                await _ftpService.UploadLogAsync(logContent, ftpfileName);
-                            }
-                            catch (Exception ex)
-                            {
-                                Logger.LogError("FTP upload fail", ex);
+                                try
+                                {
+                                    await _ftpService.UploadLogAsync(logContent, ftpfileName);
+                                }
+                                catch (Exception ex)
+                                {
+                                    Logger.LogError("FTP upload fail", ex);
+                                }
                             }
                             needRetry = false;
                         }
@@ -199,15 +203,33 @@ namespace HiPot.AutoTester.Desktop.UI
         private string GenerateLogContent(List<TestResult> results)
         {
             var sb = new System.Text.StringBuilder();
-            sb.AppendLine($"Test Date: {DateTime.Now}");
-            sb.AppendLine($"Device ISN: {results.First().ISN}");
-            sb.AppendLine("------------------------------------");
+            string divider = "---------------------------------------------------------------------";
 
-            foreach (var res in results)
+            for (int i = 0; i < results.Count; i++)
             {
-                sb.AppendLine($"Result: {res.Result} | Value: {res.Test_Value}");
-            }
+                sb.AppendLine(divider);
+                sb.AppendLine($"PSU{i + 1}");
 
+                string rawData = results[i].Test_Value;
+                if (rawData.Contains(": "))
+                {
+                    rawData = rawData.Split(new[] { ": " }, 2, StringSplitOptions.None).Last();
+                }
+
+                string formattedLine = System.Text.RegularExpressions.Regex.Replace(rawData, @"(?<label>\w+):(?<value>[\d\.]+)\s*(?<unit>[^\s,]+)", m =>
+                {
+                    string label = m.Groups["label"].Value;
+                    if (double.TryParse(m.Groups["value"].Value, out double num))
+                    {
+                        return $"{label},+{num.ToString("E6")}";
+                    }
+                    return m.Value;
+                });
+                sb.AppendLine(formattedLine);
+            }
+            sb.AppendLine(divider);
+            sb.AppendLine("");
+            sb.AppendLine($"Hi-Pot Test PASSED! {DateTime.Now:yyyy-MM-dd HH:mm:ss.ffffff}");
             return sb.ToString();
         }
 

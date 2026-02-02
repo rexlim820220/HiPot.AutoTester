@@ -1,78 +1,47 @@
-## Introduction
+﻿# HiPot AutoTester Desktop
 
-This is a simple pipeline example for a .NET Core application, showing just
-how easy it is to get up and running with .NET development using GitLab.
+A professional Windows-based automation tool designed for HiPot (High Potential) safety testing. The application synchronizes real-time test data with SFIS (Shop Floor Integrated System) and remote SFTP storage to ensure data integrity and traceability.
 
-# Reference links
+## 1. System Architecture & Modules
 
-- [GitLab CI Documentation](https://docs.gitlab.com/ee/ci/)
-- [.NET Hello World tutorial](https://dotnet.microsoft.com/learn/dotnet/hello-world-tutorial/)
+The application follows a modular design to ensure scalability and maintainability:
 
-If you're new to .NET you'll want to check out the tutorial, but if you're
-already a seasoned developer considering building your own .NET app with GitLab,
-this should all look very familiar.
+### 🛰️ Communication Modules
+*   **HiPot Service (SCPI)**: Handles low-level serial communication with HiPot instruments using SCPI commands. Features a **Mock Mode** for offline development and simulation.
+*   **SFIS Integration (SOAP/Web Service)**: Manages automated login/logout and result uploading to the factory SFIS system. Implements an auto-retry mechanism during initialization.
+*   **SFTP Service (SSH.NET)**: Provides secure file transfer capabilities to back up raw test logs to Linux-based servers (`10.197.189.143`).
 
-## What's contained in this project
+### ⚙️ Core Logic Modules
+*   **Batch Test Manager**: Handles multi-PSU testing sequences. It ensures that if a re-test is required, the entire batch (PSU1, PSU2, etc.) is re-evaluated to maintain data consistency.
+*   **Result Aggregator**: Formats individual test parameters into standardized CSV-style strings (`TEST, STATUS, VALUE, UCL, LCL`) as required by MIS specifications.
+*   **Local Logger**: A thread-safe diagnostic module that records system events and exceptions into the Windows `%TEMP%` directory for troubleshooting.
 
-The root of the repository contains the out of the `dotnet new console` command,
-which generates a new console application that just prints out "Hello, World."
-It's a simple example, but great for demonstrating how easy GitLab CI is to
-use with .NET. Check out the `Program.cs` and `dotnetcore.csproj` files to
-see how these work.
+---
 
-In addition to the .NET Core content, there is a ready-to-go `.gitignore` file
-sourced from the the .NET Core [.gitignore](https://github.com/dotnet/core/blob/master/.gitignore). This
-will help keep your repository clean of build files and other configuration.
+## 2. Interface & Operation Guide
 
-Finally, the `.gitlab-ci.yml` contains the configuration needed for GitLab
-to build your code. Let's take a look, section by section.
+### 🖥️ Main User Interface
+*   **ISN Input**: Supports barcode scanning or manual entry of the Device Internal Serial Number.
+*   **Model Selection**: A dropdown list populated via `DeviceConfig`, which automatically determines the required number of PSU tests for the selected model.
+*   **Real-time Status Board**: Large color-coded indicators (PASS/FAIL/TESTING) with synchronized system sounds for immediate operator feedback.
 
-First, we note that we want to use the official Microsoft .NET SDK image
-to build our project.
+### 🛠️ Operation Flow
+1.  **System Initialization**: On startup, the app automatically attempts to log in to the SFIS server. If the connection fails, it will enter an intelligent retry loop.
+2.  **Configuration Selection**: The operator selects the appropriate test model.
+3.  **The Testing Cycle**:
+    *   The operator triggers the test.
+    *   For multi-PSU devices, the app prompts the operator to switch connections between items.
+    *   **Logic**: The system only proceeds to the upload stage if **all items** in the batch pass.
+4.  **Data Synchronization**:
+    *   **SFIS**: Uploads the latest consolidated test result.
+    *   **SFTP**: Generates and uploads a detailed `.log` file containing raw instrument readings and high-precision timestamps.
+5.  **Error Handling**: If a test fails, the operator can choose to "Restart" (which clears previous results and restarts the full batch) or "Cancel".
 
-```
-image: microsoft/dotnet:latest
-```
+---
 
-We're defining two stages here: `build`, and `test`. As your project grows
-in complexity you can add more of these.
-
-```
-stages:
-    - build
-    - test
-```
-
-Next, we define our build job which simply runs the `dotnet build` command and
-identifies the `bin` folder as the output directory. Anything in the `bin` folder
-will be automatically handed off to future stages, and is also downloadable through
-the web UI.
-
-```
-build:
-    stage: build
-    script:
-        - "dotnet build"
-    artifacts:
-      paths:
-        - bin/
-```
-
-Similar to the build step, we get our test output simply by running `dotnet test`.
-
-```
-test:
-    stage: test
-    script: 
-        - "dotnet test"
-```
-
-This should be enough to get you started. There are many, many powerful options 
-for your `.gitlab-ci.yml`. You can read about them in our documentation 
-[here](https://docs.gitlab.com/ee/ci/yaml/).
-
-## Developing with Gitpod
-
-This template repository also has a fully-automated dev setup for [Gitpod](https://docs.gitlab.com/ee/integration/gitpod.html).
-
-The `.gitpod.yml` ensures that, when you open this repository in Gitpod, you'll get a cloud workspace with .NET Core pre-installed, and your project will automatically be built and start running.
+## 3. Technical Specifications
+*   **Framework**: .NET Framework / .NET (WinForms)
+*   **Dependencies**: 
+    *   [SSH.NET](https://github.com) (for SFTP support)
+    *   SOAP Web Services (for SFIS communication)
+*   **Log Path**: `C:\Users\AppData\Local\Temp\HiPot_AutoTester_Log.txt`
