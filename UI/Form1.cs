@@ -1,9 +1,11 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Media;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using HiPot.AutoTester.Desktop.Models;
 using HiPot.AutoTester.Desktop.Services;
 using HiPot.AutoTester.Desktop.Interfaces;
@@ -13,8 +15,10 @@ namespace HiPot.AutoTester.Desktop.UI
 {
     public partial class FormMain : Form
     {
+        private string _lastIsn = "";
         private TestWorkflowManager _manager;
         private IInstrumentCommunication serialService;
+        private Color _currentColor = Color.LightBlue;
 
         public FormMain()
         {
@@ -31,15 +35,52 @@ namespace HiPot.AutoTester.Desktop.UI
 
         private async void btnStart_Click(object sender, EventArgs e)
         {
+            bool needRetry = true;
             string isn = txtISN.Text;
             string model = lst_TestModel.Text;
+            
             if (lst_TestModel.SelectedItem is DeviceConfig selectedConfig)
             {
                 try
                 {
-                    for (int i = 0; i < selectedConfig.PsuCount; i++)
+                    while (needRetry)
                     {
-                        await RunTestAsync(isn, model);
+                        bool userCancelled = false;
+                        List<TestResult> batchResults = new List<TestResult>();
+
+                        for (int psu = 0; psu < selectedConfig.PsuCount; psu++)
+                        {
+                            if (psu > 0)
+                            {
+                                MessageBox.Show(
+                                    "Please switch PSU cable connection to next test item.\n",
+                                    "Attention!", MessageBoxButtons.OK, MessageBoxIcon.Information
+                                );
+                            }
+                            var res = await RunTestAsync(psu, selectedConfig.PsuCount, isn, model);
+                            if (res == null)
+                            {
+                                userCancelled = true;
+                                break;
+                            }
+                            batchResults.Add(res);
+                        }
+
+                        if (userCancelled) return;
+
+                        if (batchResults.Any(r => r.Result.ToUpper() == "FAIL"))
+                        {
+                            DialogResult ra = MessageBox.Show("Restart again?", "Test Fail", MessageBoxButtons.YesNo);
+                            if (ra == DialogResult.Yes)
+                            {
+                                needRetry = true;
+                                batchResults.Clear();
+                            }
+                            else
+                            {
+                                needRetry = false;
+                            }
+                        }
                     }
                 }
                 catch
@@ -53,7 +94,7 @@ namespace HiPot.AutoTester.Desktop.UI
             }
         }
 
-        private async Task RunTestAsync(string isn, string model)
+        private async Task<TestResult> RunTestAsync(int currentIndex, int totalPsu, string isn, string model)
         {
             btn_start.Enabled = false;
             var dr = MessageBox.Show(
@@ -61,17 +102,9 @@ namespace HiPot.AutoTester.Desktop.UI
                 "Please stay away from the output terminals and the device under test (DUT).\n\n" +
                 "Ensure the area is clear and press OK to proceed.",
                 "High Voltage Safety Warning",
-                MessageBoxButtons.OKCancel,
+                MessageBoxButtons.OK,
                 MessageBoxIcon.Warning
             );
-            if (dr != DialogResult.OK)
-            {
-                lbl_Result.Text = "READY";
-                lbl_Result.ForeColor = Color.Black;
-                lbl_Result.BackColor = SystemColors.Control;
-                btn_start.Enabled = !string.IsNullOrWhiteSpace(txtISN.Text);
-                return;
-            }
             try
             {
                 lbl_Result.BackColor = Color.Gray;
@@ -79,42 +112,51 @@ namespace HiPot.AutoTester.Desktop.UI
                 lbl_Result.Text = "TESTING";
 
                 var result = await _manager.ExecuteTestAsync(isn, model);
-                dgvResults.Rows.Insert(0, isn, "TEST - " + model, result.Test_Value, result.Result, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-                dgvResults.ClearSelection();
-                dgvResults.Rows[0].Selected = true;
-
-                if (result.Result.ToUpper() == "FAIL")
+                result.Model = "TEST-" + result.Model;
+                if (totalPsu > 1)
                 {
-                    lbl_Result.BackColor = Color.Red;
-                    lbl_Result.ForeColor = Color.White;
-                    SystemSounds.Hand.Play();
-                    lbl_Result.Text = "FAIL";
+                    result.Test_Value = $"PSU{currentIndex + 1}: {result.Test_Value}";
+                }
+                AddResultToDgv(result);
 
-                    DialogResult ra = MessageBox.Show("Restart again?", "Test Fail", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-                    if (ra == DialogResult.No)
-                    {
-                        lbl_Result.Text = "READY";
-                        lbl_Result.ForeColor = Color.Black;
-                        lbl_Result.BackColor = SystemColors.Control;
-                    }
-                    else
-                    {
-                        await RunTestAsync(isn, model);
-                    }
+                if (result.Result.ToUpper() == "PASS")
+                {
+                    lbl_Result.BackColor = Color.Green;
+                    lbl_Result.Text = "PASS";
+                    SystemSounds.Asterisk.Play();
                 }
                 else
                 {
-                    lbl_Result.BackColor = Color.Green;
-                    lbl_Result.ForeColor = Color.White;
-                    SystemSounds.Asterisk.Play();
-                    lbl_Result.Text = "PASS";
+                    lbl_Result.BackColor = Color.Red;
+                    lbl_Result.Text = "FAIL";
+                    SystemSounds.Hand.Play();
                 }
+
+                return result;
             }
             finally
             {
                 txtISN.Clear();
                 txtISN.Focus();
                 btn_start.Enabled = !string.IsNullOrWhiteSpace(txtISN.Text);
+            }
+        }
+
+        private void AddResultToDgv(TestResult result)
+        {
+            if (result.ISN != _lastIsn)
+            {
+                _currentColor = (_currentColor == Color.LightBlue) ? Color.White : Color.LightBlue;
+            }
+            dgvResults.Rows.Insert(0, result.ISN, result.Model, result.Test_Value, result.Result, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            dgvResults.Rows[0].DefaultCellStyle.BackColor = _currentColor;
+            dgvResults.Rows[0].Selected = true;
+            dgvResults.ClearSelection();
+            _lastIsn = result.ISN;
+            if (result.Result == "FAIL")
+            {
+                dgvResults.Rows[0].Cells["col_Result"].Style.ForeColor = Color.Red;
+                dgvResults.Rows[0].Cells["col_Result"].Style.SelectionForeColor = Color.Red;
             }
         }
 

@@ -12,7 +12,7 @@ namespace HiPot.AutoTester.Desktop.Services
         public string Query(string command)
         {
             if (command.Contains("SAFE:STAT?")) return "STOPPED";
-            if (command.Contains("SAFE:RES:ALL?")) return "116,116";
+            if (command.Contains("SAFE:RES:ALL?")) return "116,52";
             if (command.Contains("SAFE:SNUM?")) return "+2";
             if (command.Contains("SAFE:RES:ALL:MODE?")) return "GB, DC";
             if (command.Contains("*IDN?")) return "MOCK_INSTRUMENT,MODEL_1234,SN0001,1.0";

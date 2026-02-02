@@ -158,6 +158,7 @@ namespace HiPot.AutoTester.Desktop.UI
             this.dgvResults.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.dgvResults.Name = "dgvResults";
             this.dgvResults.RowHeadersWidth = 62;
+            this.dgvResults.AllowUserToAddRows = false;
             this.dgvResults.Size = new System.Drawing.Size(721, 327);
             this.dgvResults.TabIndex = 4;
             // 
