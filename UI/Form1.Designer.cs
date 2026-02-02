@@ -130,9 +130,6 @@ namespace HiPot.AutoTester.Desktop.UI
             this.lst_TestModel.Size = new System.Drawing.Size(232, 20);
             this.lst_TestModel.TabIndex = 4;
             this.lst_TestModel.DropDownStyle = ComboBoxStyle.DropDownList;
-            this.lst_TestModel.SelectionChangeCommitted += (s, e) => {
-                txtISN.Focus();
-            };
             this.lst_TestModel.SelectedIndexChanged += new System.EventHandler(this.UpdateStartButtonState);
             // 
             // lbl_ISN
@@ -225,6 +222,7 @@ namespace HiPot.AutoTester.Desktop.UI
             this.groupBox.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvResults)).EndInit();
             this.ResumeLayout(false);
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FormMainClosing);
         }
 
         #endregion

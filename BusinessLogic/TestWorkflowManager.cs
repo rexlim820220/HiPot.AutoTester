@@ -10,12 +10,10 @@ namespace HiPot.AutoTester.Desktop.BusinessLogic
     class TestWorkflowManager
     {
         private readonly IInstrumentCommunication _instrument;
-        private readonly SfisService _sfis; // 您的黑盒子
 
-        public TestWorkflowManager(IInstrumentCommunication instrument, SfisService sfis)
+        public TestWorkflowManager(IInstrumentCommunication instrument)
         {
             _instrument = instrument;
-            _sfis = sfis;
         }
 
         public async Task<TestResult> ExecuteTestAsync(string isn, string model)

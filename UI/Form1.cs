@@ -3,10 +3,12 @@ using System.IO;
 using System.Linq;
 using System.Media;
 using System.Drawing;
+using System.Threading;
 using System.Windows.Forms;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using HiPot.AutoTester.Desktop.Models;
+using HiPot.AutoTester.Desktop.Helpers;
 using HiPot.AutoTester.Desktop.Services;
 using HiPot.AutoTester.Desktop.Interfaces;
 using HiPot.AutoTester.Desktop.BusinessLogic;
@@ -17,8 +19,11 @@ namespace HiPot.AutoTester.Desktop.UI
     {
         private string _lastIsn = "";
         private TestWorkflowManager _manager;
+        private readonly IFtpService _ftpService;
+        private readonly SfisService sfisService;
         private IInstrumentCommunication serialService;
         private Color _currentColor = Color.LightBlue;
+        private CancellationTokenSource _cts = new CancellationTokenSource();
 
         public FormMain()
         {
@@ -28,9 +33,13 @@ namespace HiPot.AutoTester.Desktop.UI
 #else
             serialService = new HiPotSerialService();
 #endif
-            var sfisService = new SfisService();
-
-            _manager = new TestWorkflowManager(serialService, sfisService);
+            sfisService = new SfisService();
+            _ftpService = new SftpService();
+            _manager = new TestWorkflowManager(serialService);
+            lst_TestModel.SelectionChangeCommitted += (s, e) =>
+            {
+                txtISN.Focus();
+            };
         }
 
         private async void btnStart_Click(object sender, EventArgs e)
@@ -80,6 +89,33 @@ namespace HiPot.AutoTester.Desktop.UI
                             {
                                 needRetry = false;
                             }
+                        }
+                        else
+                        {
+                            var uploadRes = await FormatAndUploadToSfisAsync(batchResults);
+                            if (!uploadRes.IsSuccess)
+                            {
+                                MessageBox.Show($"SFIS Upload Failed:\n{uploadRes.ErrorMessage}",
+                                                "Upload Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            }
+                            else
+                            {
+                                MessageBox.Show($"SFIS Upload Success", "Upload Success",
+                                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            }
+
+                            string logContent = GenerateLogContent(batchResults);
+                            string ftpfileName = $"{batchResults.Last().ISN}_{DateTime.Now:yyyyMMddHHmmss}.log";
+
+                            try
+                            {
+                                await _ftpService.UploadLogAsync(logContent, ftpfileName);
+                            }
+                            catch (Exception ex)
+                            {
+                                Logger.LogError("FTP upload fail", ex);
+                            }
+                            needRetry = false;
                         }
                     }
                 }
@@ -160,6 +196,30 @@ namespace HiPot.AutoTester.Desktop.UI
             }
         }
 
+        private string GenerateLogContent(List<TestResult> results)
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine($"Test Date: {DateTime.Now}");
+            sb.AppendLine($"Device ISN: {results.First().ISN}");
+            sb.AppendLine("------------------------------------");
+
+            foreach (var res in results)
+            {
+                sb.AppendLine($"Result: {res.Result} | Value: {res.Test_Value}");
+            }
+
+            return sb.ToString();
+        }
+
+        private async Task<SfisResult> FormatAndUploadToSfisAsync(List<TestResult> results)
+        {
+            if (results == null || !results.Any()) return SfisResult.Failure("", "No data to upload");
+            string isn = results.Last().ISN;
+            string combinedValues = string.Join(", ", results.Select(r => r.Test_Value));
+            string csvData = $"\"HiPot\", \"PASS\", \"{combinedValues}\", \"\", \"\"";
+            return await sfisService.UploadResultAsync(isn, csvData);
+        }
+
         private void UpdateStartButtonState(object sender, EventArgs e)
         {
             bool isIsnValid = !string.IsNullOrWhiteSpace(txtISN.Text);
@@ -167,7 +227,23 @@ namespace HiPot.AutoTester.Desktop.UI
             btn_start.Enabled = isIsnValid && isModelSelected;
         }
 
-        private void FormMain_Load(object sender, EventArgs e)
+        private async Task InitializeSfisService(CancellationToken token)
+        {
+            var loginResult = await sfisService.LoginAsync(2); // Logout
+
+            while (!loginResult.IsSuccess)
+            {
+                token.ThrowIfCancellationRequested();
+
+                loginResult = await sfisService.LoginAsync(1); // Login
+
+                await Task.Delay(1500, token);
+            }
+            if (!loginResult.IsSuccess)
+                throw new InvalidOperationException("SFIS Login failed after retries.");
+        }
+
+        private async void FormMain_Load(object sender, EventArgs e)
         {
             txtISN.Focus();
             btn_EditConfig.FlatStyle = FlatStyle.Flat;
@@ -187,7 +263,9 @@ namespace HiPot.AutoTester.Desktop.UI
                 MessageBox.Show("Failed to load model configuration.", "System Error");
             }
 
-            Task.Run(() => {
+            await InitializeSfisService(_cts.Token);
+
+            await Task.Run(() => {
                 try
                 {
                     serialService.Connect(null, 9600);
@@ -255,6 +333,18 @@ namespace HiPot.AutoTester.Desktop.UI
 
                 MessageBox.Show("Model list updated successfully!", "System Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
+        }
+
+        private void FormMainClosing(object sender, FormClosingEventArgs e)
+        {
+            Task.Run(async () => {
+                await sfisService.LoginAsync(2);
+
+                if (_ftpService is SftpService sftp)
+                {
+                    sftp.Dispose();
+                }
+            });
         }
     }
 }

@@ -22,5 +22,15 @@ namespace HiPot.AutoTester.Desktop.Properties {
                 return defaultInstance;
             }
         }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.SpecialSettingAttribute(global::System.Configuration.SpecialSetting.WebServiceUrl)]
+        [global::System.Configuration.DefaultSettingValueAttribute("http://pty-sfwspd-n1.sfis.pegatroncorp.com/sfiswebservice/sfistspwebservice.asmx")]
+        public string HiPot_AutoTester_Desktop_sfistspwebservice_SFISTSPWebService {
+            get {
+                return ((string)(this["HiPot_AutoTester_Desktop_sfistspwebservice_SFISTSPWebService"]));
+            }
+        }
     }
 }
