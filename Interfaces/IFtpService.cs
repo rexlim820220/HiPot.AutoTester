@@ -1,13 +1,15 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Text;
 using Renci.SshNet;
 using System.Threading.Tasks;
+using HiPot.AutoTester.Desktop.Helpers;
 
 namespace HiPot.AutoTester.Desktop.Interfaces
 {
     interface IFtpService
     {
-        Task UploadLogAsync(string localPath, string remoteFileName);
+        Task<bool> UploadLogAsync(string localPath, string remoteFileName);
     }
 
     public class SftpService : IFtpService
@@ -16,21 +18,30 @@ namespace HiPot.AutoTester.Desktop.Interfaces
         private readonly string _host = "10.197.189.143";
         private readonly string _username = "asrr";
         private readonly string _password = "Pega#1234";
-        private readonly string _remoteDir = "asus_log";
+        private readonly string _remoteDir = "asus_log/RS700";
 
-        public async Task UploadLogAsync(string content, string fileName)
+        public async Task<bool> UploadLogAsync(string content, string fileName)
         {
-            await Task.Run(() => {
-                using (client = new SftpClient(_host, _username, _password))
+            return await Task.Run(() => {
+                try
                 {
-                    client.Connect();
-                    client.ChangeDirectory(_remoteDir);
-
-                    using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(content)))
+                    using (client = new SftpClient(_host, _username, _password))
                     {
-                        client.UploadFile(ms, fileName);
+                        client.Connect();
+                        client.ChangeDirectory(_remoteDir);
+
+                        using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(content)))
+                        {
+                            client.UploadFile(ms, fileName);
+                        }
+                        client.Disconnect();
+                        return true;
                     }
-                    client.Disconnect();
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError("FTP upload fail", ex);
+                    return false;
                 }
             });
         }

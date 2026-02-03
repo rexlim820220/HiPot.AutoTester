@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Text;
 using System.Linq;
 using System.Media;
 using System.Drawing;
@@ -67,12 +68,13 @@ namespace HiPot.AutoTester.Desktop.UI
                                 );
                             }
                             var res = await RunTestAsync(psu, selectedConfig.PsuCount, isn, model);
-                            Logger.Log($"Test Result - ISN: {res.ISN}, Model: {res.Model}, Item: PSU{psu + 1}, Status: {res.Result}, Value: {res.Test_Value}", "INFO");
                             if (res == null)
                             {
+                                btn_start.Enabled = true;
                                 userCancelled = true;
                                 break;
                             }
+                            Logger.Log($"Test Result - ISN: {res.ISN}, Model: {res.Model}, Item: PSU{psu + 1}, Status: {res.Result}, Value: {res.Test_Value}", "INFO");
                             batchResults.Add(res);
                         }
 
@@ -96,8 +98,8 @@ namespace HiPot.AutoTester.Desktop.UI
                             var uploadRes = await FormatAndUploadToSfisAsync(batchResults);
                             if (!uploadRes.IsSuccess)
                             {
-                                MessageBox.Show($"SFIS Upload Failed:\n{uploadRes.ErrorMessage}",
-                                                "Upload Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                MessageBox.Show($"{isn}:{uploadRes.ErrorMessage}",
+                                                "SFIS Upload Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             }
                             else
                             {
@@ -112,7 +114,19 @@ namespace HiPot.AutoTester.Desktop.UI
 
                                 try
                                 {
-                                    await _ftpService.UploadLogAsync(logContent, ftpfileName);
+                                    bool ftpSuccess = await _ftpService.UploadLogAsync(logContent, ftpfileName);
+                                    if (!ftpSuccess)
+                                    {
+                                        MessageBox.Show($"Failed to upload log to FTP server.",
+                                                "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    }
+                                    else
+                                    {
+                                        MessageBox.Show(
+                                            $"File: {ftpfileName}\nStatus: Successfully uploaded to RS700 directory.",
+                                            "FTP Upload Success",
+                                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                    }
                                 }
                                 catch (Exception ex)
                                 {
@@ -137,14 +151,16 @@ namespace HiPot.AutoTester.Desktop.UI
         private async Task<TestResult> RunTestAsync(int currentIndex, int totalPsu, string isn, string model)
         {
             btn_start.Enabled = false;
-            var dr = MessageBox.Show(
+            var dr = CustomMessageBox.Show(
+                this,
                 "High voltage testing is about to begin.\n\n" +
-                "Please stay away from the output terminals and the device under test (DUT).\n\n" +
-                "Ensure the area is clear and press OK to proceed.",
-                "High Voltage Safety Warning",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Warning
+                "Please stay away from the output terminals and the device under test (DUT).\n\n",
+                "High Voltage Safety Warning"
             );
+            if (dr != DialogResult.OK)
+            {
+                return null;
+            }
             try
             {
                 lbl_Result.BackColor = Color.Gray;
@@ -236,10 +252,28 @@ namespace HiPot.AutoTester.Desktop.UI
         private async Task<SfisResult> FormatAndUploadToSfisAsync(List<TestResult> results)
         {
             if (results == null || !results.Any()) return SfisResult.Failure("", "No data to upload");
+
             string isn = results.Last().ISN;
+            string model = results.Last().Model;
+
+            var chkResult = sfisService.CheckRouteAsync(isn).Result;
+            if (!chkResult.IsSuccess)
+            {
+                return SfisResult.Failure("", "Check Route Failed");
+            }
+
+            StringBuilder pDataBuilder = new StringBuilder();
+            pDataBuilder.Append("\"TEST\", \"STATUS\", \"VALUE\", \"UCL\", \"LCL\"\r\n");
+
             string combinedValues = string.Join(", ", results.Select(r => r.Test_Value));
-            string csvData = $"\"HiPot\", \"PASS\", \"{combinedValues}\", \"\", \"\"";
-            return await sfisService.UploadResultAsync(isn, csvData);
+            pDataBuilder.AppendFormat(
+                "\"{0}\", \"{1}\", \"{2}\", \"\", \"\"\r\n",
+                model,          // 對應 "TEST" 欄位
+                "PASS",         // 對應 "STATUS" 欄位
+                combinedValues  // 對應 "VALUE" 欄位
+            );
+            string pData = pDataBuilder.ToString();
+            return await sfisService.UploadResultAsync(isn, pData);
         }
 
         private void UpdateStartButtonState(object sender, EventArgs e)
