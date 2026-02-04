@@ -44,7 +44,8 @@ namespace HiPot.AutoTester.Desktop.Interfaces
 
                     try
                     {
-                        string backupDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"FTP_Backups");
+                        string pureFileName = Path.GetFileNameWithoutExtension(fileName);
+                        string backupDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"{pureFileName}_FTP_Backups");
                         if (!Directory.Exists(backupDir)) Directory.CreateDirectory(backupDir);
 
                         string localPath = Path.Combine(backupDir, fileName);

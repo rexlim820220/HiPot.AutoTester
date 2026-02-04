@@ -117,7 +117,7 @@ namespace HiPot.AutoTester.Desktop.UI
                                     bool ftpSuccess = await _ftpService.UploadLogAsync(logContent, ftpfileName);
                                     if (!ftpSuccess)
                                     {
-                                        string backupPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "FTP_Backups");
+                                        string backupPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"{isn}_FTP_Backups");
 
                                         MessageBox.Show(
                                             $"Failed to upload log to FTP server.\n\n" +
@@ -230,7 +230,7 @@ namespace HiPot.AutoTester.Desktop.UI
 
             sb.AppendLine($"ISN: {results[0].ISN}");
 
-            string testmode = serialService.Query(ScpiCommands.GetTestSummary);
+            string testmode = serialService.Query(ScpiCommands.GetModeSummary);
             string[] modeList = testmode.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                             .Select(s => s.Trim())
                             .ToArray();
