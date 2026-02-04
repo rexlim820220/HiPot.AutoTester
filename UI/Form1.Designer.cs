@@ -51,21 +51,19 @@ namespace HiPot.AutoTester.Desktop.UI
             // 
             // txtISN
             // 
-            this.txtISN.Location = new System.Drawing.Point(81, 71);
-            this.txtISN.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.txtISN.Location = new System.Drawing.Point(122, 106);
             this.txtISN.Name = "txtISN";
-            this.txtISN.Size = new System.Drawing.Size(232, 22);
+            this.txtISN.Size = new System.Drawing.Size(346, 29);
             this.txtISN.TabIndex = 0;
             this.txtISN.TextChanged += new System.EventHandler(this.UpdateStartButtonState);
             // 
             // btn_start
             // 
             this.btn_start.Enabled = false;
-            this.btn_start.Font = new System.Drawing.Font("新細明體", 12F);
-            this.btn_start.Location = new System.Drawing.Point(443, 55);
-            this.btn_start.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.btn_start.Font = new System.Drawing.Font("Verdana", 15F);
+            this.btn_start.Location = new System.Drawing.Point(664, 82);
             this.btn_start.Name = "btn_start";
-            this.btn_start.Size = new System.Drawing.Size(139, 46);
+            this.btn_start.Size = new System.Drawing.Size(208, 69);
             this.btn_start.TabIndex = 2;
             this.btn_start.Text = "Start";
             this.btn_start.UseVisualStyleBackColor = true;
@@ -78,11 +76,9 @@ namespace HiPot.AutoTester.Desktop.UI
             this.groupBox.Controls.Add(this.lst_TestModel);
             this.groupBox.Controls.Add(this.lbl_ISN);
             this.groupBox.Controls.Add(this.txtISN);
-            this.groupBox.Location = new System.Drawing.Point(57, 35);
-            this.groupBox.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBox.Location = new System.Drawing.Point(86, 52);
             this.groupBox.Name = "groupBox";
-            this.groupBox.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
-            this.groupBox.Size = new System.Drawing.Size(354, 134);
+            this.groupBox.Size = new System.Drawing.Size(531, 201);
             this.groupBox.TabIndex = 3;
             this.groupBox.TabStop = false;
             this.groupBox.Text = "Test Info";
@@ -90,10 +86,9 @@ namespace HiPot.AutoTester.Desktop.UI
             // btn_EditConfig
             // 
             this.btn_EditConfig.Font = new System.Drawing.Font("Segoe MDL2 Assets", 9F);
-            this.btn_EditConfig.Location = new System.Drawing.Point(319, 29);
-            this.btn_EditConfig.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.btn_EditConfig.Location = new System.Drawing.Point(478, 44);
             this.btn_EditConfig.Name = "btn_EditConfig";
-            this.btn_EditConfig.Size = new System.Drawing.Size(27, 23);
+            this.btn_EditConfig.Size = new System.Drawing.Size(40, 34);
             this.btn_EditConfig.TabIndex = 6;
             this.btn_EditConfig.Text = "";
             this.btn_EditConfig.UseVisualStyleBackColor = true;
@@ -102,48 +97,47 @@ namespace HiPot.AutoTester.Desktop.UI
             // lbl_TestNo
             // 
             this.lbl_TestNo.AutoSize = true;
-            this.lbl_TestNo.Location = new System.Drawing.Point(27, 34);
-            this.lbl_TestNo.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.lbl_TestNo.Font = new System.Drawing.Font("Tahoma", 12F);
+            this.lbl_TestNo.Location = new System.Drawing.Point(16, 43);
             this.lbl_TestNo.Name = "lbl_TestNo";
-            this.lbl_TestNo.Size = new System.Drawing.Size(47, 12);
+            this.lbl_TestNo.Size = new System.Drawing.Size(100, 29);
             this.lbl_TestNo.TabIndex = 5;
             this.lbl_TestNo.Text = "Model：";
             // 
             // lst_TestModel
             // 
+            this.lst_TestModel.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.lst_TestModel.FormattingEnabled = true;
             this.lst_TestModel.Items.AddRange(new object[] {
-                "M001 - HOJI",
-                "M002 - CATLOW",
-                "M003 - JIMBO",
-                "M004 - FRONTIER",
-                "M005 - HL",
-                "M006 - BU18RAMONE",
-                "M007 - ENDEAUOR",
-                "M008 - MACK",
-                "M009 - JIM",
-                "M010 - ASUSRS700"
-            });
-            this.lst_TestModel.Location = new System.Drawing.Point(81, 31);
-            this.lst_TestModel.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            "M001 - HOJI",
+            "M002 - CATLOW",
+            "M003 - JIMBO",
+            "M004 - FRONTIER",
+            "M005 - HL",
+            "M006 - BU18RAMONE",
+            "M007 - ENDEAUOR",
+            "M008 - MACK",
+            "M009 - JIM",
+            "M010 - ASUSRS700"});
+            this.lst_TestModel.Location = new System.Drawing.Point(122, 46);
             this.lst_TestModel.Name = "lst_TestModel";
-            this.lst_TestModel.Size = new System.Drawing.Size(232, 20);
+            this.lst_TestModel.Size = new System.Drawing.Size(346, 26);
             this.lst_TestModel.TabIndex = 4;
-            this.lst_TestModel.DropDownStyle = ComboBoxStyle.DropDownList;
             this.lst_TestModel.SelectedIndexChanged += new System.EventHandler(this.UpdateStartButtonState);
             // 
             // lbl_ISN
             // 
             this.lbl_ISN.AutoSize = true;
-            this.lbl_ISN.Location = new System.Drawing.Point(39, 74);
-            this.lbl_ISN.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.lbl_ISN.Font = new System.Drawing.Font("Tahoma", 12F);
+            this.lbl_ISN.Location = new System.Drawing.Point(41, 106);
             this.lbl_ISN.Name = "lbl_ISN";
-            this.lbl_ISN.Size = new System.Drawing.Size(35, 12);
+            this.lbl_ISN.Size = new System.Drawing.Size(75, 29);
             this.lbl_ISN.TabIndex = 3;
             this.lbl_ISN.Text = "ISN：";
             // 
             // dgvResults
             // 
+            this.dgvResults.AllowUserToAddRows = false;
             this.dgvResults.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dgvResults.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.col_ISN,
@@ -151,12 +145,10 @@ namespace HiPot.AutoTester.Desktop.UI
             this.Test_Value,
             this.col_Result,
             this.col_Time});
-            this.dgvResults.Location = new System.Drawing.Point(57, 195);
-            this.dgvResults.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.dgvResults.Location = new System.Drawing.Point(86, 292);
             this.dgvResults.Name = "dgvResults";
             this.dgvResults.RowHeadersWidth = 62;
-            this.dgvResults.AllowUserToAddRows = false;
-            this.dgvResults.Size = new System.Drawing.Size(721, 327);
+            this.dgvResults.Size = new System.Drawing.Size(1082, 490);
             this.dgvResults.TabIndex = 4;
             // 
             // col_ISN
@@ -196,33 +188,32 @@ namespace HiPot.AutoTester.Desktop.UI
             // 
             // lbl_Result
             // 
-            this.lbl_Result.Font = new System.Drawing.Font("微軟正黑體", 24F, System.Drawing.FontStyle.Bold);
-            this.lbl_Result.Location = new System.Drawing.Point(595, 51);
-            this.lbl_Result.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.lbl_Result.Font = new System.Drawing.Font("Verdana", 24F, System.Drawing.FontStyle.Bold);
+            this.lbl_Result.Location = new System.Drawing.Point(892, 76);
             this.lbl_Result.Name = "lbl_Result";
-            this.lbl_Result.Size = new System.Drawing.Size(160, 53);
+            this.lbl_Result.Size = new System.Drawing.Size(240, 80);
             this.lbl_Result.TabIndex = 7;
             this.lbl_Result.Text = "READY";
             this.lbl_Result.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // FormMain
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 18F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(830, 598);
+            this.ClientSize = new System.Drawing.Size(1245, 897);
             this.Controls.Add(this.lbl_Result);
             this.Controls.Add(this.dgvResults);
             this.Controls.Add(this.groupBox);
             this.Controls.Add(this.btn_start);
-            this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.Name = "FormMain";
             this.Text = "HiPot Control Panel";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FormMainClosing);
             this.Load += new System.EventHandler(this.FormMain_Load);
             this.groupBox.ResumeLayout(false);
             this.groupBox.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dgvResults)).EndInit();
             this.ResumeLayout(false);
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FormMainClosing);
+
         }
 
         #endregion
