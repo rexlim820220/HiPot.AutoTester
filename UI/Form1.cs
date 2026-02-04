@@ -221,6 +221,19 @@ namespace HiPot.AutoTester.Desktop.UI
             var sb = new System.Text.StringBuilder();
             string divider = "---------------------------------------------------------------------";
 
+            sb.AppendLine($"ISN: {results[0].ISN}");
+
+            string testmode = serialService.Query(ScpiCommands.GetTestSummary);
+            string[] modeList = testmode.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                            .Select(s => s.Trim())
+                            .ToArray();
+
+            var sourceCache = new string[results.Count];
+            for (int j = 0; j < results.Count; j++)
+            {
+                sourceCache[j] = serialService.Query($"SOURCE:SAFE:STEP{j + 1}:{modeList[j]}:LEV?");
+            }
+
             for (int i = 0; i < results.Count; i++)
             {
                 sb.AppendLine(divider);
@@ -235,9 +248,9 @@ namespace HiPot.AutoTester.Desktop.UI
                 string formattedLine = System.Text.RegularExpressions.Regex.Replace(rawData, @"(?<label>\w+):(?<value>[\d\.]+)\s*(?<unit>[^\s,]+)", m =>
                 {
                     string label = m.Groups["label"].Value;
-                    if (double.TryParse(m.Groups["value"].Value, out double num))
+                    if (double.TryParse(m.Groups["value"].Value, out double val))
                     {
-                        return $"{label},+{num.ToString("E6")}";
+                        return $"{label},{sourceCache[i]},+{val.ToString("E6")},116";
                     }
                     return m.Value;
                 });
