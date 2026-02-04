@@ -117,8 +117,15 @@ namespace HiPot.AutoTester.Desktop.UI
                                     bool ftpSuccess = await _ftpService.UploadLogAsync(logContent, ftpfileName);
                                     if (!ftpSuccess)
                                     {
-                                        MessageBox.Show($"Failed to upload log to FTP server.",
-                                                "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                        string backupPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "FTP_Backups");
+
+                                        MessageBox.Show(
+                                            $"Failed to upload log to FTP server.\n\n" +
+                                            $"The log file has been saved to the local directory for backup:\n" +
+                                            $"{backupPath}",
+                                            "Upload Error (Network Blocked)",
+                                            MessageBoxButtons.OK,
+                                            MessageBoxIcon.Warning);
                                     }
                                     else
                                     {

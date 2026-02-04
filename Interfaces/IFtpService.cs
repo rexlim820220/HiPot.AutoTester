@@ -40,7 +40,23 @@ namespace HiPot.AutoTester.Desktop.Interfaces
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogError("FTP upload fail", ex);
+                    Logger.LogError("FTP upload fail, starting local backup.", ex);
+
+                    try
+                    {
+                        string backupDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"FTP_Backups");
+                        if (!Directory.Exists(backupDir)) Directory.CreateDirectory(backupDir);
+
+                        string localPath = Path.Combine(backupDir, fileName);
+                        File.WriteAllText(localPath, content);
+
+                        Logger.Log($"Local backup created at: {localPath}");
+                    }
+                    catch (Exception backupEx)
+                    {
+                        Logger.LogError("Critical: Local backup also failed.", backupEx);
+                    }
+
                     return false;
                 }
             });
