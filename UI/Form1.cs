@@ -1,18 +1,19 @@
-﻿using System;
+﻿using HiPot.AutoTester.Desktop.BusinessLogic;
+using HiPot.AutoTester.Desktop.Helpers;
+using HiPot.AutoTester.Desktop.Interfaces;
+using HiPot.AutoTester.Desktop.Models;
+using HiPot.AutoTester.Desktop.Services;
+using System;
+using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
-using System.Text;
 using System.Linq;
 using System.Media;
-using System.Drawing;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
-using System.Windows.Forms;
 using System.Threading.Tasks;
-using System.Collections.Generic;
-using HiPot.AutoTester.Desktop.Models;
-using HiPot.AutoTester.Desktop.Helpers;
-using HiPot.AutoTester.Desktop.Services;
-using HiPot.AutoTester.Desktop.Interfaces;
-using HiPot.AutoTester.Desktop.BusinessLogic;
+using System.Windows.Forms;
 
 namespace HiPot.AutoTester.Desktop.UI
 {
@@ -74,7 +75,8 @@ namespace HiPot.AutoTester.Desktop.UI
                                 userCancelled = true;
                                 break;
                             }
-                            Logger.Log($"Test Result - ISN: {res.ISN}, Model: {res.Model}, Item: PSU{psu + 1}, Status: {res.Result}, Value: {res.Test_Value}", "INFO");
+                            res.PSU = $"{psu + 1}";
+                            Logger.Log($"Test Result - ISN: {res.ISN}, Model: {res.Model}, Item: PSU{res.PSU}, Status: {res.Result}, Value: {res.Test_Value}", "INFO");
                             batchResults.Add(res);
                         }
 
@@ -235,10 +237,14 @@ namespace HiPot.AutoTester.Desktop.UI
                             .Select(s => s.Trim())
                             .ToArray();
 
-            var sourceCache = new string[results.Count];
-            for (int j = 0; j < results.Count; j++)
+            var sourceMap = new Dictionary<string, string>();
+
+            for (int j = 0; j < modeList.Length; j++)
             {
-                sourceCache[j] = serialService.Query($"SOURCE:SAFE:STEP{j + 1}:{modeList[j]}:LEV?");
+                string mode = modeList[j];
+                string value = serialService.Query(
+                    $"SOURCE:SAFE:STEP{j + 1}:{mode}:LEV?");
+                sourceMap[mode] = value;
             }
 
             for (int i = 0; i < results.Count; i++)
@@ -252,15 +258,21 @@ namespace HiPot.AutoTester.Desktop.UI
                     rawData = rawData.Split(new[] { ": " }, 2, StringSplitOptions.None).Last();
                 }
 
-                string formattedLine = System.Text.RegularExpressions.Regex.Replace(rawData, @"(?<label>\w+):(?<value>[\d\.]+)\s*(?<unit>[^\s,]+)", m =>
-                {
-                    string label = m.Groups["label"].Value;
-                    if (double.TryParse(m.Groups["value"].Value, out double val))
+                string formattedLine =
+                Regex.Replace(
+                    rawData,
+                    @"(?<label>\w+):(?<value>[\d\.]+)",
+                    m =>
                     {
-                        return $"{label},{sourceCache[i]},+{val.ToString("E6")},116";
-                    }
-                    return m.Value;
-                });
+                        string label = m.Groups["label"].Value;
+                        double val = double.Parse(m.Groups["value"].Value);
+
+                        string source = sourceMap.TryGetValue(label, out var s)
+                            ? s
+                            : "";
+
+                        return $",{source},+{val.ToString("0.000000E+00")},116";
+                    });
                 sb.AppendLine(formattedLine);
             }
             sb.AppendLine(divider);
