@@ -269,10 +269,11 @@ namespace HiPot.AutoTester.Desktop.UI
 
                         string source = sourceMap.TryGetValue(label, out var s)
                             ? s
-                            : "";
+                            : "0";
 
-                        return $",{source},+{val.ToString("0.000000E+00")},116";
+                        return $"{label},+{double.Parse(source).ToString("0.000000E+00")},+{val.ToString("0.000000E+00")},116";
                     });
+                formattedLine = Regex.Replace(formattedLine, @"(,116)[^,]*", "$1");
                 sb.AppendLine(formattedLine);
             }
             sb.AppendLine(divider);
