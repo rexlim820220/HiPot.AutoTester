@@ -144,12 +144,12 @@ namespace HiPot.AutoTester.Desktop.UI
                         }
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
                     lbl_Result.Text = "READY";
                     lbl_Result.ForeColor = Color.Black;
                     lbl_Result.BackColor = SystemColors.Control;
-                    MessageBox.Show("Please check HiPot Serial Port settings and cable connection.\n",
+                    MessageBox.Show($"Please check HiPot Serial Port settings and cable connection.\n\n{ex}",
                                     "Serial Port Error", MessageBoxButtons.OK, MessageBoxIcon.Stop);
                 }
             }
@@ -324,11 +324,15 @@ namespace HiPot.AutoTester.Desktop.UI
             txtISN.Focus();
             btn_EditConfig.FlatStyle = FlatStyle.Flat;
             btn_EditConfig.FlatAppearance.BorderSize = 0;
+
+            // 設定 DataGridView 樣式
             col_ISN.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
             col_TestType.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
             col_Result.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
             col_Time.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
             Test_Value.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+
+            btn_start.Enabled = false;
 
             try
             {
@@ -341,21 +345,24 @@ namespace HiPot.AutoTester.Desktop.UI
 
             await InitializeSfisService(_cts.Token);
 
-            await Task.Run(() => {
-                try
-                {
+            try
+            {
+                await Task.Run(() => {
                     serialService.Connect(null, 9600);
-                }
-                catch
-                {
-                    Invoke(new Action(() =>
-                    {
-                        MessageBox.Show("Fail to detect any device!\nPlease check HiPot Serial Port settings or cable connection.\n",
-                                "Connection failed", MessageBoxButtons.OK, MessageBoxIcon.Stop);
-                        Application.Exit();
-                    }));
-                }
-            });
+                });
+                btn_start.Enabled = true;
+                Logger.Log("HiPot Device Connected Successfully.", "INFO");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Fail to detect any device!\nError: {ex.Message}\n\nPlease check HiPot Serial Port settings or cable connection.",
+                    "Connection Failed",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Stop);
+
+                Application.Exit();
+            }
         }
 
         private void LoadModelSettings()

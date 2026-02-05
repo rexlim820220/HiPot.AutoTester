@@ -76,10 +76,8 @@ namespace HiPot.AutoTester.Desktop.Services
 
         public void SendCommand(string command)
         {
-            if (_port == null || !_port.IsOpen)
-            {
-                throw new Exception("Serial port is not initialized.");
-            }
+            if (_port == null) throw new Exception("Serial port object is null. Did you call Connect()?");
+            if (!_port.IsOpen) throw new Exception("Serial port is closed.");
             try
             {
                 _port.WriteLine(command);

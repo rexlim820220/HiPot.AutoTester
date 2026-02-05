@@ -16,6 +16,8 @@ namespace HiPot.AutoTester.Desktop.Services
             if (command.Contains("SAFE:RES:ALL?")) return "116,116"; //$"116,{(_random.Next(2) == 0 ? "116" : "52")}";
             if (command.Contains("SAFE:SNUM?")) return "+2";
             if (command.Contains("SAFE:RES:ALL:MODE?")) return "GB, DC";
+            if (command.Contains("SAFE:STEP1:GB:LEV?")) return "+3.000000E+01";
+            if (command.Contains("SAFE:STEP2:DC:LEV?")) return "+2.500000E+03";
             if (command.Contains("*IDN?")) return "MOCK_INSTRUMENT,MODEL_1234,SN0001,1.0";
             if (command.Contains("SAFE:RES:ALL:MMET?"))
             {
