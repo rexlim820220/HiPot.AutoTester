@@ -1,4 +1,4 @@
-﻿
+
 using System.Windows.Forms;
 
 namespace HiPot.AutoTester.Desktop.UI

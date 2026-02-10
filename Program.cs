@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Windows.Forms;
 using HiPot.AutoTester.Desktop.UI;
 using HiPot.AutoTester.Desktop.Helpers;

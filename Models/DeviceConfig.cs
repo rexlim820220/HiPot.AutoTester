@@ -1,4 +1,4 @@
-﻿namespace HiPot.AutoTester.Desktop.Models
+namespace HiPot.AutoTester.Desktop.Models
 {
     class DeviceConfig
     {

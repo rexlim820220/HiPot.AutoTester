@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using HiPot.AutoTester.Desktop.Models;
 using HiPot.AutoTester.Desktop.Helpers;

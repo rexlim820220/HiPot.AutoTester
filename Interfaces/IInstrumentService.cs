@@ -1,4 +1,4 @@
-﻿namespace HiPot.AutoTester.Desktop.Interfaces
+namespace HiPot.AutoTester.Desktop.Interfaces
 {
     public interface IInstrumentCommunication
     {

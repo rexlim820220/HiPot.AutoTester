@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using HiPot.AutoTester.Desktop.sfistspwebservice;
 
@@ -51,17 +51,30 @@ namespace HiPot.AutoTester.Desktop.Services
         {
             if (_isLoggedIn)
                 return SfisResult.Success("Already logged in");
+
             try
             {
-                string response = await Task.Run(() => _soapClient.WTSP_LOGINOUT(
-                    programId: _parameters.ProgramId,
-                    programPassword: _parameters.ProgramPassword,
-                    op: "LA0800494",
-                    password: "LA0800494",
-                    device: _parameters.Device,
-                    TSP: _parameters.TSP,
-                    status: _status
-                ));
+                _soapClient.Timeout = 5000;
+
+                string response = await Task.Run(() =>
+                {
+                    try
+                    {
+                        return _soapClient.WTSP_LOGINOUT(
+                            programId: _parameters.ProgramId,
+                            programPassword: _parameters.ProgramPassword,
+                            op: _parameters.UserID,
+                            password: _parameters.UserPassword,
+                            device: _parameters.Device,
+                            TSP: _parameters.TSP,
+                            status: _status
+                        );
+                    }
+                    catch (Exception innerEx)
+                    {
+                        throw new InvalidOperationException($"SFIS Login failed as device {_parameters.Device}", innerEx);
+                    }
+                });
 
                 bool success = response.TrimStart().StartsWith("1");
                 if (success) _isLoggedIn = true;
@@ -69,6 +82,10 @@ namespace HiPot.AutoTester.Desktop.Services
                 return success
                     ? SfisResult.Success(response)
                     : SfisResult.Failure(response, "SFIS Login failed");
+            }
+            catch (System.Net.WebException ex)
+            {
+                return SfisResult.Failure("", $"Network error: {ex.Message}");
             }
             catch (Exception ex)
             {

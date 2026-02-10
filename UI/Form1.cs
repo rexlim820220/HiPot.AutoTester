@@ -1,4 +1,4 @@
-﻿using HiPot.AutoTester.Desktop.BusinessLogic;
+using HiPot.AutoTester.Desktop.BusinessLogic;
 using HiPot.AutoTester.Desktop.Helpers;
 using HiPot.AutoTester.Desktop.Interfaces;
 using HiPot.AutoTester.Desktop.Models;
@@ -318,18 +318,34 @@ namespace HiPot.AutoTester.Desktop.UI
 
         private async Task InitializeSfisService(CancellationToken token)
         {
-            var loginResult = await sfisService.LoginAsync(2); // Logout
+            int retryCount = 0;
+            const int maxRetries = 3;
+            SfisResult loginResult = await sfisService.LoginAsync(2);
 
-            while (!loginResult.IsSuccess)
+            if (!loginResult.IsSuccess)
+            {
+                throw new Exception(loginResult.ErrorMessage);
+            }
+
+            while (retryCount < maxRetries)
             {
                 token.ThrowIfCancellationRequested();
 
-                loginResult = await sfisService.LoginAsync(1); // Login
+                loginResult = await sfisService.LoginAsync(1);
 
-                await Task.Delay(1500, token);
+                if (loginResult.IsSuccess) break;
+
+                retryCount++;
+                Logger.Log($"SFIS Login attempt {retryCount} failed: {loginResult.ErrorMessage}", "WARN");
+
+                if (retryCount < maxRetries)
+                    await Task.Delay(2000, token);
             }
-            if (!loginResult.IsSuccess)
-                throw new InvalidOperationException("SFIS Login failed after retries.");
+
+            if (loginResult == null || !loginResult.IsSuccess)
+            {
+                throw new InvalidOperationException($"SFIS connection failed, retried {maxRetries} times. Reason: { loginResult?.ErrorMessage}");
+            }
         }
 
         private async void FormMain_Load(object sender, EventArgs e)
@@ -349,30 +365,38 @@ namespace HiPot.AutoTester.Desktop.UI
 
             try
             {
-                LoadModelSettings();
-            }
-            catch
-            {
-                MessageBox.Show("Failed to load model configuration.", "System Error");
-            }
+                try
+                {
+                    LoadModelSettings();
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception($"Form Initialization failed: {ex.Message}");
+                }
 
-            await InitializeSfisService(_cts.Token);
+                Logger.Log("Connecting to SFIS server...", "INFO");
+                await InitializeSfisService(_cts.Token);
+                Logger.Log("SFIS Login success!", "INFO");
 
-            try
-            {
+                Logger.Log("Scanning HiPot device...", "INFO");
                 await Task.Run(() => {
                     serialService.Connect(null, 9600);
                 });
+
                 btn_start.Enabled = true;
-                Logger.Log("HiPot Device Connected Successfully.", "INFO");
+                Logger.Log("HiPot device is connected", "INFO");
+            }
+            catch (OperationCanceledException)
+            {
+                Logger.Log("Model initialization revoked", "WARN");
             }
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    $"Fail to detect any device!\nError: {ex.Message}\n\nPlease check HiPot Serial Port settings or cable connection.",
-                    "Connection Failed",
+                    $"Initialization Error!\n\n{ex.Message}\n\nPlease check network connection",
+                    "System launch failure",
                     MessageBoxButtons.OK,
-                    MessageBoxIcon.Stop);
+                    MessageBoxIcon.Error);
 
                 Application.Exit();
             }

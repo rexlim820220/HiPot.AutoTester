@@ -1,4 +1,4 @@
-﻿# HiPot AutoTester Desktop
+# HiPot AutoTester Desktop
 
 A professional Windows-based automation tool designed for HiPot (High Potential) safety testing. The application synchronizes real-time test data with SFIS (Shop Floor Integrated System) and remote SFTP storage to ensure data integrity and traceability.
 

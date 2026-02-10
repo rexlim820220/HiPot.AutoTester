@@ -1,4 +1,4 @@
-﻿namespace HiPot.AutoTester.Desktop.Helpers
+namespace HiPot.AutoTester.Desktop.Helpers
 {
     public static class ScpiCommands
     {

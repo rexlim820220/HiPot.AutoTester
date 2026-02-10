@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using HiPot.AutoTester.Desktop.Interfaces;
 
 namespace HiPot.AutoTester.Desktop.Services

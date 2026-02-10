@@ -1,5 +1,6 @@
-﻿// HiPotSerialService.cs
+// HiPotSerialService.cs
 using System;
+using System.IO;
 using System.IO.Ports;
 using HiPot.AutoTester.Desktop.Interfaces;
 
@@ -11,58 +12,87 @@ namespace HiPot.AutoTester.Desktop.Services
 
         private void TryOpenPort(string name, int baud)
         {
-            if (_port != null && _port.IsOpen) _port.Close();
-            _port = new SerialPort(name, baud, Parity.None, 8, StopBits.One)
+            try
             {
-                NewLine = "\n",
-                ReadTimeout = 2000,
-                WriteTimeout = 1000
-            };
-            _port.Open();
+                if (_port != null)
+                {
+                    if (_port.IsOpen) _port.Close();
+                    _port.Dispose();
+                    _port = null;
+                }
+
+                _port = new SerialPort(name, baud, Parity.None, 8, StopBits.One)
+                {
+                    NewLine = "\n",
+                    ReadTimeout = 2000,
+                    WriteTimeout = 1000,
+                    DtrEnable = true,
+                    RtsEnable = true
+                };
+
+                _port.Open();
+
+                _port.DiscardInBuffer();
+                _port.DiscardOutBuffer();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                throw new Exception($"Port {name} is already occupied by another program.");
+            }
+            catch (IOException ex)
+            {
+                throw new Exception($"Unable to open port {name}, please check hardware connections. Content: {ex.Message}");
+            }
         }
 
         public void Connect(string portName = null, int baudRate = 9600)
         {
+            string[] availablePorts = SerialPort.GetPortNames();
+
+            if (availablePorts.Length == 0)
+            {
+                throw new Exception("No COM Port detected by the computer.");
+            }
+
             if (!string.IsNullOrEmpty(portName))
             {
                 TryOpenPort(portName, baudRate);
                 return;
             }
 
-            string[] availablePorts = SerialPort.GetPortNames();
             bool foundDevice = false;
-
-            foreach(string p in availablePorts)
+            foreach (string p in availablePorts)
             {
                 try
                 {
                     TryOpenPort(p, baudRate);
-                    _port.ReadTimeout = 1000;
+                    _port.ReadTimeout = 1500;
+                    _port.DiscardInBuffer();
                     _port.WriteLine("*IDN?");
-                    string idn = _port.ReadLine();
 
-                    if (idn.Contains("Chroma"))
+                    string idn = _port.ReadLine();
+                    if (idn.ToUpper().Contains("CHROMA"))
                     {
                         foundDevice = true;
                         _port.ReadTimeout = 5000;
                         break;
                     }
-                    else
-                    {
-                        _port.Close();
-                    }
                 }
-                catch
+                catch {}
+                finally
                 {
-                    if (_port != null && _port.IsOpen) _port.Close();
+                    if (!foundDevice && _port != null && _port.IsOpen)
+                        _port.Close();
                 }
             }
 
             if (!foundDevice)
             {
-                throw new Exception("19032-P was not found in any of the COM ports");
+                throw new Exception("Scan complete, device 19032-P not found (please ensure power is on).");
             }
         }
+
+
         public void Disconnect()
         {
             if (_port != null && _port.IsOpen)
