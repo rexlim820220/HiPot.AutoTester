@@ -43,7 +43,7 @@ namespace HiPot.AutoTester.Desktop.Services
             _soapClient = new SFISTSPWebService();
             _soapClient.Url = "http://pty-sfwspd-n1.sfis.pegatroncorp.com/sfiswebservice/sfistspwebservice.asmx";
             _soapClient.UseDefaultCredentials = true;
-            _soapClient.Timeout = 30000;
+            _soapClient.Timeout = 700;
         }
 
         #region ----- LOGIN 登入 -----
@@ -54,8 +54,6 @@ namespace HiPot.AutoTester.Desktop.Services
 
             try
             {
-                _soapClient.Timeout = 5000;
-
                 string response = await Task.Run(() =>
                 {
                     try

@@ -9,7 +9,7 @@ namespace HiPot.AutoTester.Desktop.Interfaces
 {
     interface IFtpService
     {
-        Task<bool> UploadLogAsync(string localPath, string remoteFileName);
+        Task<bool> UploadLogAsync(string localPath, string remoteFileName, string remoteDir=null);
     }
 
     public class SftpService : IFtpService
@@ -20,7 +20,7 @@ namespace HiPot.AutoTester.Desktop.Interfaces
         private readonly string _password = "Pega#1234";
         private readonly string _remoteDir = "asus_log/RS700";
 
-        public async Task<bool> UploadLogAsync(string content, string fileName)
+        public async Task<bool> UploadLogAsync(string content, string fileName, string remoteDir=null)
         {
             return await Task.Run(() => {
                 try
@@ -28,7 +28,8 @@ namespace HiPot.AutoTester.Desktop.Interfaces
                     using (client = new SftpClient(_host, _username, _password))
                     {
                         client.Connect();
-                        client.ChangeDirectory(_remoteDir);
+                        string targetDir = remoteDir??_remoteDir;
+                        client.ChangeDirectory(targetDir);
 
                         using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(content)))
                         {

@@ -116,7 +116,7 @@ namespace HiPot.AutoTester.Desktop.UI
 
                                 try
                                 {
-                                    bool ftpSuccess = await _ftpService.UploadLogAsync(logContent, ftpfileName);
+                                    bool ftpSuccess = await _ftpService.UploadLogAsync(logContent, ftpfileName, selectedConfig.RemoteDir);
                                     if (!ftpSuccess)
                                     {
                                         string backupPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"{isn}_FTP_Backups");
@@ -412,15 +412,21 @@ namespace HiPot.AutoTester.Desktop.UI
                 {
                     if (string.IsNullOrWhiteSpace(line.Trim())) continue;
                     var parts = line.Split(',');
-                    string modelName = parts[0].Trim();
-                    if (parts.Length != 2 || string.IsNullOrWhiteSpace(modelName) || !int.TryParse(parts[1], out int psuCount))
+                    if (parts.Length < 2 || parts.Length > 3)
                     {
-                        throw new Exception("Invalid model configuration format.");
+                        throw new Exception($"Invalid model configuration format: {line}");
                     }
+                    string modelName = parts[0].Trim();
+                    if (string.IsNullOrWhiteSpace(modelName) || !int.TryParse(parts[1], out int psuCount))
+                    {
+                        throw new Exception($"Invalid psuCount in line: {line}");
+                    }
+                    string remoteDir = (parts.Length == 3) ? parts[2].Trim():null;
                     var config = new DeviceConfig
                     {
                         Name = modelName,
-                        PsuCount = psuCount
+                        PsuCount = psuCount,
+                        RemoteDir = remoteDir
                     };
                     lst_TestModel.Items.Add(config);
                 }
