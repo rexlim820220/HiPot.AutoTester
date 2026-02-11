@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using HiPot.AutoTester.Desktop.Helpers;
 using HiPot.AutoTester.Desktop.sfistspwebservice;
 
 namespace HiPot.AutoTester.Desktop.Services
@@ -70,24 +71,36 @@ namespace HiPot.AutoTester.Desktop.Services
                     }
                     catch (Exception innerEx)
                     {
-                        throw new InvalidOperationException($"SFIS Login failed as device {_parameters.Device}", innerEx);
+                        throw new InvalidOperationException(
+                            $"SFIS SOAP 呼叫失敗 (device: {_parameters.Device})", innerEx);
                     }
                 });
 
-                bool success = response.TrimStart().StartsWith("1");
-                if (success) _isLoggedIn = true;
+                Logger.Log($"SFIS 原始回應: [{response}]", "DEBUG");
 
-                return success
-                    ? SfisResult.Success(response)
-                    : SfisResult.Failure(response, "SFIS Login failed");
+                bool success = response?.TrimStart().StartsWith("1") == true;
+
+                if (success)
+                {
+                    _isLoggedIn = true;
+                    return SfisResult.Success(response.Trim());
+                }
+                else
+                {
+                    // 失敗時把完整 response 帶回去
+                    string errorDetail = response?.Trim() ?? "(無回應)";
+                    return SfisResult.Failure(response, $"SFIS 登入失敗 - 伺服器回應: {errorDetail}");
+                }
             }
             catch (System.Net.WebException ex)
             {
-                return SfisResult.Failure("", $"Network error: {ex.Message}");
+                Logger.Log($"SFIS 網路例外: {ex.Message}", "ERROR");
+                return SfisResult.Failure("", $"網路連線失敗: {ex.Message}");
             }
             catch (Exception ex)
             {
-                return SfisResult.Failure("", $"Login Exception: {ex.Message}");
+                Logger.Log($"SFIS 其他例外: {ex.Message}\n{ex.StackTrace}", "ERROR");
+                return SfisResult.Failure("", $"登入發生例外: {ex.Message}");
             }
         }
         #endregion

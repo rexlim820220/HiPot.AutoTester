@@ -15,10 +15,10 @@ namespace HiPot.AutoTester.Desktop.Interfaces
     public class SftpService : IFtpService
     {
         private SftpClient client;
-        private readonly string _host = "10.197.189.143";
-        private readonly string _username = "asrr";
-        private readonly string _password = "Pega#1234";
-        private readonly string _remoteDir = "asus_log/RS700";
+        private readonly string _host = "10.197.189.138";
+        private readonly string _username = "root";
+        private readonly string _password = "Abba@24Jun20";
+        private readonly string _remoteDir = "ASUS/RS700-HIPOT";
 
         public async Task<bool> UploadLogAsync(string content, string fileName, string remoteDir=null)
         {

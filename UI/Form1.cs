@@ -322,29 +322,46 @@ namespace HiPot.AutoTester.Desktop.UI
             const int maxRetries = 3;
             SfisResult loginResult = await sfisService.LoginAsync(2);
 
-            if (!loginResult.IsSuccess)
-            {
-                throw new Exception(loginResult.ErrorMessage);
-            }
-
             while (retryCount < maxRetries)
             {
                 token.ThrowIfCancellationRequested();
 
-                loginResult = await sfisService.LoginAsync(1);
+                try
+                {
+                    loginResult = await sfisService.LoginAsync(1);
 
-                if (loginResult.IsSuccess) break;
+                    if (loginResult.IsSuccess)
+                    {
+                        Logger.Log("SFIS login success", "INFO");
+                        break;
+                    }
 
-                retryCount++;
-                Logger.Log($"SFIS Login attempt {retryCount} failed: {loginResult.ErrorMessage}", "WARN");
+                    string detail = loginResult?.ErrorMessage ?? "無錯誤訊息返回 (可能是 null)";
+                    Logger.Log($"SFIS 第 {retryCount + 1} 次登入失敗：{detail}", "ERROR");
 
-                if (retryCount < maxRetries)
-                    await Task.Delay(2000, token);
+                    retryCount++;
+                    if (retryCount < maxRetries)
+                    {
+                        Logger.Log($"等待 2 秒後重試... ({retryCount}/{maxRetries})", "WARN");
+                        await Task.Delay(2000, token);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"SFIS 登入發生例外：{ex.Message}\n{ex.StackTrace}", "ERROR");
+                    retryCount++;
+                    if (retryCount < maxRetries)
+                        await Task.Delay(2000, token);
+                }
             }
 
             if (loginResult == null || !loginResult.IsSuccess)
             {
-                throw new InvalidOperationException($"SFIS connection failed, retried {maxRetries} times. Reason: { loginResult?.ErrorMessage}");
+                string finalError = loginResult?.ErrorMessage ?? "無回應或完全無結果";
+                throw new InvalidOperationException(
+                    $"SFIS 連線失敗，已重試 {maxRetries} 次。\n" +
+                    $"最後錯誤訊息：{finalError}\n" +
+                    "請檢查帳號密碼、IP/MAC 綁定、SFIS 伺服器狀態");
             }
         }
 
