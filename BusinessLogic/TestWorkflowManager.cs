@@ -20,6 +20,7 @@ namespace HiPot.AutoTester.Desktop.BusinessLogic
         {
             try
             {
+                _instrument.Connect(null, 9600);
                 _instrument.SendCommand(ScpiCommands.StartTest);
 
                 bool isRunning = true;
@@ -53,6 +54,7 @@ namespace HiPot.AutoTester.Desktop.BusinessLogic
             finally
             {
                 _instrument.SendCommand(ScpiCommands.StopTest);
+                _instrument.Disconnect();
             }
         }
     }
