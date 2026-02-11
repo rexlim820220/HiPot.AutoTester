@@ -8,7 +8,7 @@ namespace HiPot.AutoTester.Desktop.Services
         public string UserID => "LA0800494";
         public string UserPassword => "LA0800494";
         public string TSP => "HiPot";
-        public int Status => 0;
+        public int Status => 1;
         public string CPKFlag => "N";
         public string Error => "";
     }

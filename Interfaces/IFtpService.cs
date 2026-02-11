@@ -34,6 +34,7 @@ namespace HiPot.AutoTester.Desktop.Interfaces
                         using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(content)))
                         {
                             client.UploadFile(ms, fileName);
+                            Logger.Log($"FTP upload details: {content} to {targetDir}");
                         }
                         client.Disconnect();
                         return true;

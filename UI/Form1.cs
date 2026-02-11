@@ -54,6 +54,7 @@ namespace HiPot.AutoTester.Desktop.UI
             {
                 try
                 {
+                    serialService.Connect(null, 9600);
                     while (needRetry)
                     {
                         bool userCancelled = false;
@@ -132,7 +133,7 @@ namespace HiPot.AutoTester.Desktop.UI
                                     else
                                     {
                                         MessageBox.Show(
-                                            $"File: {ftpfileName}\nStatus: Successfully uploaded to RS700 directory.",
+                                            $"File: {ftpfileName}\nStatus: Successfully uploaded to {selectedConfig.RemoteDir} directory.",
                                             "FTP Upload Success",
                                             MessageBoxButtons.OK, MessageBoxIcon.Information);
                                     }
@@ -153,6 +154,10 @@ namespace HiPot.AutoTester.Desktop.UI
                     lbl_Result.BackColor = SystemColors.Control;
                     MessageBox.Show($"Please check HiPot Serial Port settings and cable connection.\n\n{ex}",
                                     "Serial Port Error", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                }
+                finally
+                {
+                    serialService.SendCommand(ScpiCommands.StopTest);
                 }
             }
         }
