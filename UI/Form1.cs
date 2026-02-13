@@ -46,55 +46,45 @@ namespace HiPot.AutoTester.Desktop.UI
 
         private async void btnStart_Click(object sender, EventArgs e)
         {
-            bool needRetry = true;
+            btn_start.Enabled = false;
+
             string isn = txtISN.Text;
-            string model = lst_TestModel.Text;
-            
             if (lst_TestModel.SelectedItem is DeviceConfig selectedConfig)
             {
                 try
                 {
-                    serialService.Connect(null, 9600);
+                    if (!serialService.IsConnected)
+                    {
+                        serialService.Connect(null, 9600);
+                    }
+
+                    bool needRetry = true;
                     while (needRetry)
                     {
-                        bool userCancelled = false;
+                        if (!serialService.IsConnected) serialService.Connect(null, 9600);
+
                         List<TestResult> batchResults = new List<TestResult>();
+                        bool isBatchPass = true;
 
                         for (int psu = 0; psu < selectedConfig.PsuCount; psu++)
                         {
-                            if (psu > 0)
-                            {
+                             if (psu > 0) {
                                 MessageBox.Show(
                                     "Please switch PSU cable connection to next test item.\n",
                                     "Attention!", MessageBoxButtons.OK, MessageBoxIcon.Information
                                 );
                             }
-                            var res = await RunTestAsync(psu, selectedConfig.PsuCount, isn, model);
-                            if (res == null)
-                            {
-                                btn_start.Enabled = true;
-                                userCancelled = true;
-                                break;
-                            }
-                            res.PSU = $"{psu + 1}";
-                            Logger.Log($"Test Result - ISN: {res.ISN}, Model: {res.Model}, Item: PSU{res.PSU}, Status: {res.Result}, Value: {res.Test_Value}", "INFO");
+                            var res = await RunTestAsync(psu, selectedConfig.PsuCount, isn, selectedConfig.Name);
+                            if (res == null) return;
+                            if (res.Result.ToUpper() == "FAIL") isBatchPass = false;
+
                             batchResults.Add(res);
                         }
 
-                        if (userCancelled) return;
-
-                        if (batchResults.Any(r => r.Result.ToUpper() == "FAIL"))
+                        if (!isBatchPass)
                         {
                             DialogResult ra = MessageBox.Show("Restart again?", "Test Fail", MessageBoxButtons.YesNo);
-                            if (ra == DialogResult.Yes)
-                            {
-                                needRetry = true;
-                                batchResults.Clear();
-                            }
-                            else
-                            {
-                                needRetry = false;
-                            }
+                            needRetry = (ra == DialogResult.Yes);
                         }
                         else
                         {
@@ -102,7 +92,7 @@ namespace HiPot.AutoTester.Desktop.UI
                             if (!uploadRes.IsSuccess)
                             {
                                 MessageBox.Show($"{isn}:{uploadRes.ErrorMessage}",
-                                                "SFIS Upload Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    "SFIS Upload Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             }
                             else
                             {
@@ -121,21 +111,22 @@ namespace HiPot.AutoTester.Desktop.UI
                                     if (!ftpSuccess)
                                     {
                                         string backupPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"{isn}_FTP_Backups");
-
                                         MessageBox.Show(
                                             $"Failed to upload log to FTP server.\n\n" +
                                             $"The log file has been saved to the local directory for backup:\n" +
                                             $"{backupPath}",
                                             "Upload Error (Network Blocked)",
                                             MessageBoxButtons.OK,
-                                            MessageBoxIcon.Warning);
+                                            MessageBoxIcon.Warning
+                                        );
                                     }
                                     else
                                     {
                                         MessageBox.Show(
-                                            $"File: {ftpfileName}\nStatus: Successfully uploaded to {selectedConfig.RemoteDir} directory.",
+                                            $"File: {ftpfileName}\nStatus: Successfully uploaded to {selectedConfig.RemoteDir ?? "ASUS/RS700-HIPOT"} directory.",
                                             "FTP Upload Success",
-                                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                            MessageBoxButtons.OK, MessageBoxIcon.Information
+                                        );
                                     }
                                 }
                                 catch (Exception ex)
@@ -152,12 +143,12 @@ namespace HiPot.AutoTester.Desktop.UI
                     lbl_Result.Text = "READY";
                     lbl_Result.ForeColor = Color.Black;
                     lbl_Result.BackColor = SystemColors.Control;
-                    MessageBox.Show($"Please check HiPot Serial Port settings and cable connection.\n\n{ex}",
-                                    "Serial Port Error", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                    Logger.LogError("btnStart_Click 發生嚴重錯誤", ex);
+                    MessageBox.Show($"執行中斷: {ex.Message}", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
                 finally
                 {
-                    serialService.SendCommand(ScpiCommands.StopTest);
+                    btn_start.Enabled = true;
                 }
             }
         }

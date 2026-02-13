@@ -6,6 +6,7 @@ namespace HiPot.AutoTester.Desktop.Services
     public class MockHiPotService : IInstrumentCommunication
     {
         private static readonly Random _random = new Random();
+        public bool IsConnected { get; }
         public void Connect(string portName, int baudRate) { }
         public void Disconnect() { }
         public void SendCommand(string command) { }

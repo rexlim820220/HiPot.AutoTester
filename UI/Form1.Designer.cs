@@ -50,7 +50,8 @@ namespace HiPot.AutoTester.Desktop.UI
             this.SuspendLayout();
             // 
             // txtISN
-            // 
+            //
+            this.txtISN.Font = new System.Drawing.Font("Tahoma", 12.0f, System.Drawing.FontStyle.Regular);
             this.txtISN.Location = new System.Drawing.Point(122, 106);
             this.txtISN.Name = "txtISN";
             this.txtISN.Size = new System.Drawing.Size(346, 29);
@@ -105,7 +106,8 @@ namespace HiPot.AutoTester.Desktop.UI
             this.lbl_TestNo.Text = "Model：";
             // 
             // lst_TestModel
-            // 
+            //
+            this.lst_TestModel.Font = new System.Drawing.Font("Tahoma", 12.0f, System.Drawing.FontStyle.Regular);
             this.lst_TestModel.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.lst_TestModel.FormattingEnabled = true;
             this.lst_TestModel.Items.AddRange(new object[] {

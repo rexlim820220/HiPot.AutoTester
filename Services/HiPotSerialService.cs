@@ -5,6 +5,7 @@ using HiPot.AutoTester.Desktop.Interfaces;
 public class HiPotSerialService : IInstrumentCommunication, IDisposable
 {
     private SerialPort _port;
+    public bool IsConnected => _port != null && _port.IsOpen;
 
     private void TryOpenPort(string name, int baud)
     {
@@ -26,6 +27,8 @@ public class HiPotSerialService : IInstrumentCommunication, IDisposable
 
     public void Connect(string portName = null, int baudRate = 9600)
     {
+        if (IsConnected) return;
+
         string[] availablePorts = SerialPort.GetPortNames();
 
         if (availablePorts.Length == 0)
