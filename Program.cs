@@ -13,11 +13,13 @@ namespace HiPot.AutoTester.Desktop
         [STAThread]
         static void Main()
         {
+            Logger.Log("===== Start Program =====", "INFO");
             Application.ThreadException += (s, e) => Logger.LogError("Unhandled UI Exception", e.Exception);
             AppDomain.CurrentDomain.UnhandledException += (s, e) => Logger.LogError("Unhandled App Exception", e.ExceptionObject as Exception);
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new FormMain());
+            System.Diagnostics.Debug.WriteLine("\n");
         }
     }
 }

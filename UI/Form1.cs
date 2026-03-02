@@ -46,8 +46,8 @@ namespace HiPot.AutoTester.Desktop.UI
 
         private async void btnStart_Click(object sender, EventArgs e)
         {
+            if (sfisService.IsConnecting || !sfisService.IsLoggedIn) return;
             btn_start.Enabled = false;
-
             string isn = txtISN.Text;
             if (lst_TestModel.SelectedItem is DeviceConfig selectedConfig)
             {
@@ -88,6 +88,10 @@ namespace HiPot.AutoTester.Desktop.UI
                         }
                         else
                         {
+#if DEBUG
+                            MessageBox.Show($"SFIS Upload Success", "Upload Success",
+                                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+#else
                             var uploadRes = await FormatAndUploadToSfisAsync(batchResults);
                             if (!uploadRes.IsSuccess)
                             {
@@ -99,7 +103,7 @@ namespace HiPot.AutoTester.Desktop.UI
                                 MessageBox.Show($"SFIS Upload Success", "Upload Success",
                                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                             }
-
+#endif
                             if (selectedConfig.PsuCount > 1)
                             {
                                 string logContent = GenerateLogContent(batchResults);
@@ -389,6 +393,9 @@ namespace HiPot.AutoTester.Desktop.UI
 
                 Logger.Log("Connecting to SFIS server...", "INFO");
                 await InitializeSfisService(_cts.Token);
+
+                if (!sfisService.IsLoggedIn)
+                    throw new Exception("SFIS Login failed after retries.");
                 Logger.Log("SFIS Login success!", "INFO");
 
                 Logger.Log("Scanning HiPot device...", "INFO");
@@ -476,14 +483,26 @@ namespace HiPot.AutoTester.Desktop.UI
 
         private void FormMainClosing(object sender, FormClosingEventArgs e)
         {
-            Task.Run(async () => {
-                await sfisService.LoginAsync(2);
+            try
+            {
+                Task.Run(async () => await sfisService.LoginAsync(2)).Wait(2000);
 
                 if (_ftpService is SftpService sftp)
                 {
                     sftp.Dispose();
                 }
-            });
+                if (serialService != null && serialService.IsConnected)
+                {
+                    serialService.Disconnect();
+                }
+
+                Logger.Log("===== Successfully Exit =====", "INFO");
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Exit Error: {ex.Message}", "ERROR");
+            }
         }
+
     }
 }

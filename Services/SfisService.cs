@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using HiPot.AutoTester.Desktop.Helpers;
 using HiPot.AutoTester.Desktop.sfistspwebservice;
@@ -24,6 +25,8 @@ namespace HiPot.AutoTester.Desktop.Services
 
     public interface ISfisService
     {
+        bool IsLoggedIn { get; }
+        bool IsConnecting { get; }
         Task<SfisResult> LoginAsync(int status);
         Task<SfisResult> UploadResultAsync(string isn, string data);
         SfisResult UploadResult(string isn, string data);
@@ -33,9 +36,15 @@ namespace HiPot.AutoTester.Desktop.Services
     public class SfisService: ISfisService
     {
         // ------------- Web Service --------------------
+#if DEBUG
+        private bool _isLoggedIn = true;
+#else
         private bool _isLoggedIn = false;
+#endif
+        private bool _isConnecting = false;
         private readonly Sfis_Upload_Para _parameters;
         private readonly SFISTSPWebService _soapClient;
+        private readonly SemaphoreSlim _loginLock = new SemaphoreSlim(1, 1);
 
         public SfisService(Sfis_Upload_Para parameters = null)
         {
@@ -44,17 +53,22 @@ namespace HiPot.AutoTester.Desktop.Services
             _soapClient = new SFISTSPWebService();
             _soapClient.Url = "http://pty-sfwspd-n1.sfis.pegatroncorp.com/sfiswebservice/sfistspwebservice.asmx";
             _soapClient.UseDefaultCredentials = true;
-            _soapClient.Timeout = 10000;
+            _soapClient.Timeout = 1000;
         }
 
         #region ----- LOGIN 登入 -----
         public async Task<SfisResult> LoginAsync(int _status)
         {
-            if (_isLoggedIn)
-                return SfisResult.Success("Already logged in");
-
+#if !DEBUG
             try
             {
+                if (_isLoggedIn)
+                    return SfisResult.Success("Already logged in");
+
+                _isConnecting = true;
+                await _loginLock.WaitAsync();
+
+                _soapClient.Timeout = 5000;
                 string response = await Task.Run(() =>
                 {
                     try
@@ -76,7 +90,7 @@ namespace HiPot.AutoTester.Desktop.Services
                     }
                 });
 
-                Logger.Log($"SFIS 原始回應: [{response}]", "DEBUG");
+                Logger.Log($"SFIS Login回應: [{response}]", "DEBUG");
 
                 bool success = response?.TrimStart().StartsWith("1") == true;
 
@@ -87,7 +101,6 @@ namespace HiPot.AutoTester.Desktop.Services
                 }
                 else
                 {
-                    // 失敗時把完整 response 帶回去
                     string errorDetail = response?.Trim() ?? "(無回應)";
                     return SfisResult.Failure(response, $"SFIS 登入失敗 - 伺服器回應: {errorDetail}");
                 }
@@ -102,6 +115,15 @@ namespace HiPot.AutoTester.Desktop.Services
                 Logger.Log($"SFIS 其他例外: {ex.Message}\n{ex.StackTrace}", "ERROR");
                 return SfisResult.Failure("", $"登入發生例外: {ex.Message}");
             }
+            finally
+            {
+                _isConnecting = false;
+                _loginLock.Release();
+            }
+#else
+            _isLoggedIn = true;
+            return SfisResult.Success("Debug mode: simulated login");
+#endif
         }
         #endregion
 
@@ -125,6 +147,8 @@ namespace HiPot.AutoTester.Desktop.Services
                     checkData: "12345;A00001;A00002",
                     type: 1
                 )).ConfigureAwait(false);
+
+                Logger.Log($"SFIS CheckRoute回應: [{response}]", "DEBUG");
 
                 bool isSuccess = response.StartsWith("1");
                 return isSuccess
@@ -155,6 +179,8 @@ namespace HiPot.AutoTester.Desktop.Services
                     CPKFlag: _parameters.CPKFlag
                 )).ConfigureAwait(false);
 
+                Logger.Log($"SFIS Upload Result回應: [{response}]", "DEBUG");
+
                 bool isSuccess = !string.IsNullOrEmpty(response) && response.StartsWith("1");
                 return isSuccess
                     ? SfisResult.Success(response)
@@ -170,5 +196,14 @@ namespace HiPot.AutoTester.Desktop.Services
         public SfisResult UploadResult(string isn, string data)
             => UploadResultAsync(isn, data).GetAwaiter().GetResult();
         #endregion
+
+        public bool IsLoggedIn
+        {
+            get { return _isLoggedIn; }
+        }
+        public bool IsConnecting
+        {
+            get { return _isConnecting; }
+        }
     }
 }

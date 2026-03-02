@@ -2,7 +2,6 @@ using System;
 using System.Threading.Tasks;
 using HiPot.AutoTester.Desktop.Models;
 using HiPot.AutoTester.Desktop.Helpers;
-using HiPot.AutoTester.Desktop.Services;
 using HiPot.AutoTester.Desktop.Interfaces;
 
 namespace HiPot.AutoTester.Desktop.BusinessLogic

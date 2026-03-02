@@ -50,11 +50,11 @@ namespace HiPot.AutoTester.Desktop.UI
             this.SuspendLayout();
             // 
             // txtISN
-            //
-            this.txtISN.Font = new System.Drawing.Font("Tahoma", 12.0f, System.Drawing.FontStyle.Regular);
+            // 
+            this.txtISN.Font = new System.Drawing.Font("Tahoma", 12F);
             this.txtISN.Location = new System.Drawing.Point(122, 106);
             this.txtISN.Name = "txtISN";
-            this.txtISN.Size = new System.Drawing.Size(346, 29);
+            this.txtISN.Size = new System.Drawing.Size(346, 36);
             this.txtISN.TabIndex = 0;
             this.txtISN.TextChanged += new System.EventHandler(this.UpdateStartButtonState);
             // 
@@ -106,9 +106,9 @@ namespace HiPot.AutoTester.Desktop.UI
             this.lbl_TestNo.Text = "Model：";
             // 
             // lst_TestModel
-            //
-            this.lst_TestModel.Font = new System.Drawing.Font("Tahoma", 12.0f, System.Drawing.FontStyle.Regular);
+            // 
             this.lst_TestModel.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.lst_TestModel.Font = new System.Drawing.Font("Tahoma", 12F);
             this.lst_TestModel.FormattingEnabled = true;
             this.lst_TestModel.Items.AddRange(new object[] {
             "M001 - HOJI",
@@ -123,7 +123,7 @@ namespace HiPot.AutoTester.Desktop.UI
             "M010 - ASUSRS700"});
             this.lst_TestModel.Location = new System.Drawing.Point(122, 46);
             this.lst_TestModel.Name = "lst_TestModel";
-            this.lst_TestModel.Size = new System.Drawing.Size(346, 26);
+            this.lst_TestModel.Size = new System.Drawing.Size(346, 37);
             this.lst_TestModel.TabIndex = 4;
             this.lst_TestModel.SelectedIndexChanged += new System.EventHandler(this.UpdateStartButtonState);
             // 
@@ -147,10 +147,11 @@ namespace HiPot.AutoTester.Desktop.UI
             this.Test_Value,
             this.col_Result,
             this.col_Time});
+            this.dgvResults.Font = new System.Drawing.Font("Tahoma", 12F);
             this.dgvResults.Location = new System.Drawing.Point(86, 292);
             this.dgvResults.Name = "dgvResults";
             this.dgvResults.RowHeadersWidth = 62;
-            this.dgvResults.Size = new System.Drawing.Size(1082, 490);
+            this.dgvResults.Size = new System.Drawing.Size(1195, 587);
             this.dgvResults.TabIndex = 4;
             // 
             // col_ISN
@@ -202,7 +203,7 @@ namespace HiPot.AutoTester.Desktop.UI
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 18F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1245, 897);
+            this.ClientSize = new System.Drawing.Size(1343, 967);
             this.Controls.Add(this.lbl_Result);
             this.Controls.Add(this.dgvResults);
             this.Controls.Add(this.groupBox);
