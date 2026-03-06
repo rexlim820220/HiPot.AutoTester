@@ -121,6 +121,7 @@ namespace HiPot.AutoTester.Desktop.UI
             "M008 - MACK",
             "M009 - JIM",
             "M010 - ASUSRS700"});
+            this.lst_TestModel.SelectedIndex = 0;
             this.lst_TestModel.Location = new System.Drawing.Point(122, 46);
             this.lst_TestModel.Name = "lst_TestModel";
             this.lst_TestModel.Size = new System.Drawing.Size(346, 37);

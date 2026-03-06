@@ -1,5 +1,6 @@
 using System;
 using System.IO.Ports;
+using HiPot.AutoTester.Desktop.Helpers;
 using HiPot.AutoTester.Desktop.Interfaces;
 
 public class HiPotSerialService : IInstrumentCommunication, IDisposable
@@ -45,14 +46,25 @@ public class HiPotSerialService : IInstrumentCommunication, IDisposable
             try
             {
                 TryOpenPort(p, baudRate);
+                _port.WriteLine("*CLS");
+                System.Threading.Thread.Sleep(50);
                 _port.WriteLine("*IDN?");
                 string idn = _port.ReadLine();
 
-                if (idn.ToUpper().Contains("CHROMA"))
+                if (!string.IsNullOrEmpty(idn) && idn.ToUpper().Contains("CHROMA"))
+                {
+                    _port.DiscardInBuffer();
                     return;
+                }
             }
-            catch
+            catch (TimeoutException)
             {
+                Logger.Debug($"Port {p} response timeout, skipping...");
+                SafeClosePort();
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug($"Port {p} failed: {ex.Message}");
                 SafeClosePort();
             }
         }
@@ -73,12 +85,8 @@ public class HiPotSerialService : IInstrumentCommunication, IDisposable
             {
                 if (_port.IsOpen)
                 {
-                    try
-                    {
-                        _port.WriteLine("SYST:LOC");
-                    }
-                    catch { }
-
+                    _port.DiscardInBuffer();
+                    _port.DiscardOutBuffer();
                     _port.Close();
                 }
 

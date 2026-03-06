@@ -77,7 +77,8 @@ namespace HiPot.AutoTester.Desktop.UI
                             var res = await RunTestAsync(psu, selectedConfig.PsuCount, isn, selectedConfig.Name);
                             if (res == null) return;
                             if (res.Result.ToUpper() == "FAIL") isBatchPass = false;
-
+                            res.PSU = $"{psu + 1}";
+                            Logger.Log($"Test Result - ISN: {res.ISN}, Model: {res.Model}, Item: PSU{res.PSU}, Status: {res.Result}, Value: {res.Test_Value}", "INFO");
                             batchResults.Add(res);
                         }
 
@@ -332,23 +333,23 @@ namespace HiPot.AutoTester.Desktop.UI
 
                     if (loginResult.IsSuccess)
                     {
-                        Logger.Log("SFIS login success", "INFO");
+                        Logger.Debug("SFIS login success", "INFO");
                         break;
                     }
 
                     string detail = loginResult?.ErrorMessage ?? "無錯誤訊息返回 (可能是 null)";
-                    Logger.Log($"SFIS 第 {retryCount + 1} 次登入失敗：{detail}", "ERROR");
+                    Logger.Debug($"SFIS 第 {retryCount + 1} 次登入失敗：{detail}", "ERROR");
 
                     retryCount++;
                     if (retryCount < maxRetries)
                     {
-                        Logger.Log($"等待 2 秒後重試... ({retryCount}/{maxRetries})", "WARN");
+                        Logger.Debug($"等待 2 秒後重試... ({retryCount}/{maxRetries})", "WARN");
                         await Task.Delay(2000, token);
                     }
                 }
                 catch (Exception ex)
                 {
-                    Logger.Log($"SFIS 登入發生例外：{ex.Message}\n{ex.StackTrace}", "ERROR");
+                    Logger.LogError($"SFIS 登入發生例外", ex);
                     retryCount++;
                     if (retryCount < maxRetries)
                         await Task.Delay(2000, token);
@@ -382,36 +383,33 @@ namespace HiPot.AutoTester.Desktop.UI
 
             try
             {
-                try
+                LoadModelSettings();
+
+                Logger.Debug("Scanning HiPot device...", "INFO");
+                using (var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(10)))
                 {
-                    LoadModelSettings();
-                }
-                catch (Exception ex)
-                {
-                    throw new Exception($"Form Initialization failed: {ex.Message}");
+                    await Task.Run(() => serialService.Connect(null, 9600));
                 }
 
-                Logger.Log("Connecting to SFIS server...", "INFO");
+                Logger.Debug("Connecting to SFIS server...", "INFO");
                 await InitializeSfisService(_cts.Token);
 
                 if (!sfisService.IsLoggedIn)
                     throw new Exception("SFIS Login failed after retries.");
-                Logger.Log("SFIS Login success!", "INFO");
-
-                Logger.Log("Scanning HiPot device...", "INFO");
-                await Task.Run(() => {
-                    serialService.Connect(null, 9600);
-                });
+                Logger.Debug("SFIS Login success!", "INFO");
 
                 btn_start.Enabled = true;
-                Logger.Log("HiPot device is connected", "INFO");
+                Logger.Debug("HiPot device is connected", "INFO");
             }
             catch (OperationCanceledException)
             {
-                Logger.Log("Model initialization revoked", "WARN");
+                Logger.Debug("Model initialization revoked", "WARN");
             }
             catch (Exception ex)
             {
+                Program.HasError = true;
+                Logger.Log($"Initialization Error: {ex.Message}", "ERROR");
+                Logger.LogError("Initialization Error", ex);
                 MessageBox.Show(
                     $"Initialization Error!\n\n{ex.Message}\n\nPlease check network connection",
                     "System launch failure",
@@ -483,10 +481,13 @@ namespace HiPot.AutoTester.Desktop.UI
 
         private void FormMainClosing(object sender, FormClosingEventArgs e)
         {
+            _cts?.Cancel();
+            if (serialService != null)
+            {
+                serialService.Disconnect();
+            }
             try
             {
-                Task.Run(async () => await sfisService.LoginAsync(2)).Wait(2000);
-
                 if (_ftpService is SftpService sftp)
                 {
                     sftp.Dispose();
@@ -495,14 +496,11 @@ namespace HiPot.AutoTester.Desktop.UI
                 {
                     serialService.Disconnect();
                 }
-
-                Logger.Log("===== Successfully Exit =====", "INFO");
             }
             catch (Exception ex)
             {
-                Logger.Log($"Exit Error: {ex.Message}", "ERROR");
+                Logger.LogError($"Exit Error", ex);
             }
         }
-
     }
 }

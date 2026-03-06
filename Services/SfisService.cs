@@ -60,6 +60,7 @@ namespace HiPot.AutoTester.Desktop.Services
         public async Task<SfisResult> LoginAsync(int _status)
         {
 #if !DEBUG
+            await _loginLock.WaitAsync();
             try
             {
                 if (_isLoggedIn)
@@ -90,7 +91,7 @@ namespace HiPot.AutoTester.Desktop.Services
                     }
                 });
 
-                Logger.Log($"SFIS Login回應: [{response}]", "DEBUG");
+                Logger.Debug($"SFIS Login回應: [{response}]");
 
                 bool success = response?.TrimStart().StartsWith("1") == true;
 
@@ -107,12 +108,12 @@ namespace HiPot.AutoTester.Desktop.Services
             }
             catch (System.Net.WebException ex)
             {
-                Logger.Log($"SFIS 網路例外: {ex.Message}", "ERROR");
+                Logger.LogError($"SFIS 網路例外", ex);
                 return SfisResult.Failure("", $"網路連線失敗: {ex.Message}");
             }
             catch (Exception ex)
             {
-                Logger.Log($"SFIS 其他例外: {ex.Message}\n{ex.StackTrace}", "ERROR");
+                Logger.LogError($"SFIS 其他例外", ex);
                 return SfisResult.Failure("", $"登入發生例外: {ex.Message}");
             }
             finally
@@ -148,7 +149,7 @@ namespace HiPot.AutoTester.Desktop.Services
                     type: 1
                 )).ConfigureAwait(false);
 
-                Logger.Log($"SFIS CheckRoute回應: [{response}]", "DEBUG");
+                Logger.Debug($"SFIS CheckRoute回應: [{response}]");
 
                 bool isSuccess = response.StartsWith("1");
                 return isSuccess
@@ -179,7 +180,7 @@ namespace HiPot.AutoTester.Desktop.Services
                     CPKFlag: _parameters.CPKFlag
                 )).ConfigureAwait(false);
 
-                Logger.Log($"SFIS Upload Result回應: [{response}]", "DEBUG");
+                Logger.Debug($"SFIS Upload Result回應: [{response}]");
 
                 bool isSuccess = !string.IsNullOrEmpty(response) && response.StartsWith("1");
                 return isSuccess
