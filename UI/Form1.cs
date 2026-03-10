@@ -46,7 +46,6 @@ namespace HiPot.AutoTester.Desktop.UI
 
         private async void btnStart_Click(object sender, EventArgs e)
         {
-            if (sfisService.IsConnecting || !sfisService.IsLoggedIn) return;
             btn_start.Enabled = false;
             string isn = txtISN.Text;
             if (lst_TestModel.SelectedItem is DeviceConfig selectedConfig)
@@ -321,7 +320,7 @@ namespace HiPot.AutoTester.Desktop.UI
         {
             int retryCount = 0;
             const int maxRetries = 3;
-            SfisResult loginResult = await sfisService.LoginAsync(2);
+            SfisResult loginResult = null;
 
             while (retryCount < maxRetries)
             {
@@ -392,7 +391,28 @@ namespace HiPot.AutoTester.Desktop.UI
                 }
 
                 Logger.Debug("Connecting to SFIS server...", "INFO");
-                await InitializeSfisService(_cts.Token);
+                using (var initTimeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(5)))
+                {
+                    Logger.Debug("Connecting to SFIS server...", "INFO");
+
+                    using (var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(initTimeoutCts.Token, _cts.Token))
+                    {
+                        try
+                        {
+                            await InitializeSfisService(combinedCts.Token);
+
+                            if (!sfisService.IsLoggedIn)
+                                throw new Exception("SFIS Login failed.");
+
+                            Logger.Debug("SFIS Login success!", "INFO");
+                            btn_start.Enabled = true;
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            throw new Exception("SFIS 連線超時 (5秒)，請檢查網路或伺服器狀態。");
+                        }
+                    }
+                }
 
                 if (!sfisService.IsLoggedIn)
                     throw new Exception("SFIS Login failed after retries.");

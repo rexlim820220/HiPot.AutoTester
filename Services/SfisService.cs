@@ -67,7 +67,6 @@ namespace HiPot.AutoTester.Desktop.Services
                     return SfisResult.Success("Already logged in");
 
                 _isConnecting = true;
-                await _loginLock.WaitAsync();
 
                 _soapClient.Timeout = 5000;
                 string response = await Task.Run(() =>
