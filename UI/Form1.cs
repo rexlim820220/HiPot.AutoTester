@@ -320,7 +320,7 @@ namespace HiPot.AutoTester.Desktop.UI
         {
             int retryCount = 0;
             const int maxRetries = 3;
-            SfisResult loginResult = null;
+            SfisResult loginResult = await sfisService.LoginAsync(2);
 
             while (retryCount < maxRetries)
             {

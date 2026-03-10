@@ -85,8 +85,8 @@ namespace HiPot.AutoTester.Desktop.Services
                     }
                     catch (Exception innerEx)
                     {
-                        throw new InvalidOperationException(
-                            $"SFIS SOAP 呼叫失敗 (device: {_parameters.Device})", innerEx);
+                        string action = _status == 1 ? "Login" : (_status == 2 ? "Logout" : $"Unknown({_status})");
+                        throw new InvalidOperationException($"SFIS {action} SOAP 呼叫失敗 (Device: {_parameters.Device})", innerEx);
                     }
                 });
 
