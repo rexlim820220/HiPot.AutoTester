@@ -393,8 +393,6 @@ namespace HiPot.AutoTester.Desktop.UI
                 Logger.Debug("Connecting to SFIS server...", "INFO");
                 using (var initTimeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(5)))
                 {
-                    Logger.Debug("Connecting to SFIS server...", "INFO");
-
                     using (var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(initTimeoutCts.Token, _cts.Token))
                     {
                         try

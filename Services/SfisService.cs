@@ -53,7 +53,7 @@ namespace HiPot.AutoTester.Desktop.Services
             _soapClient = new SFISTSPWebService();
             _soapClient.Url = "http://pty-sfwspd-n1.sfis.pegatroncorp.com/sfiswebservice/sfistspwebservice.asmx";
             _soapClient.UseDefaultCredentials = true;
-            _soapClient.Timeout = 1000;
+            _soapClient.Timeout = 5000;
         }
 
         #region ----- LOGIN 登入 -----
@@ -63,7 +63,7 @@ namespace HiPot.AutoTester.Desktop.Services
             await _loginLock.WaitAsync();
             try
             {
-                if (_isLoggedIn)
+                if (_status == 1 && _isLoggedIn)
                     return SfisResult.Success("Already logged in");
 
                 _isConnecting = true;
@@ -96,7 +96,7 @@ namespace HiPot.AutoTester.Desktop.Services
 
                 if (success)
                 {
-                    _isLoggedIn = true;
+                    _isLoggedIn = (_status == 1);
                     return SfisResult.Success(response.Trim());
                 }
                 else

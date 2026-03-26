@@ -7,23 +7,25 @@ public class HiPotSerialService : IInstrumentCommunication, IDisposable
 {
     private SerialPort _port;
     public bool IsConnected => _port != null && _port.IsOpen;
+    private readonly object _serialLock = new object();
 
     private void TryOpenPort(string name, int baud)
     {
-        SafeClosePort();
-
-        _port = new SerialPort(name, baud, Parity.None, 8, StopBits.One)
+        lock (_serialLock)
         {
-            NewLine = "\n",
-            ReadTimeout = 2000,
-            WriteTimeout = 1000,
-            DtrEnable = true,
-            RtsEnable = true
-        };
+            _port = new SerialPort(name, baud, Parity.None, 8, StopBits.One)
+            {
+                NewLine = "\n",
+                ReadTimeout = 800,
+                WriteTimeout = 1000,
+                DtrEnable = true,
+                RtsEnable = true
+            };
 
-        _port.Open();
-        _port.DiscardInBuffer();
-        _port.DiscardOutBuffer();
+            _port.Open();
+            _port.DiscardInBuffer();
+            _port.DiscardOutBuffer();
+        }
     }
 
     public void Connect(string portName = null, int baudRate = 9600)
@@ -79,64 +81,98 @@ public class HiPotSerialService : IInstrumentCommunication, IDisposable
 
     private void SafeClosePort()
     {
-        try
+        lock (_serialLock)
         {
-            if (_port != null)
+            try
             {
-                if (_port.IsOpen)
+                if (_port != null)
                 {
-                    _port.DiscardInBuffer();
-                    _port.DiscardOutBuffer();
-                    _port.Close();
-                }
+                    if (_port.IsOpen)
+                    {
+                        _port.DiscardInBuffer();
+                        _port.DiscardOutBuffer();
+                        _port.Close();
+                    }
 
-                _port.Dispose();
-                _port = null;
+                    _port.Dispose();
+                    _port = null;
+                }
             }
+            catch { }
         }
-        catch { }
     }
 
     public void SendCommand(string command)
     {
-        EnsureConnected();
-
-        try
+        lock (_serialLock)
         {
-            _port.WriteLine(command);
-        }
-        catch (Exception ex)
-        {
-            SafeClosePort();
-            throw new Exception($"Command sent failed: {ex.Message}");
+            EnsureConnected();
+            try
+            {
+                _port.WriteLine(command);
+            }
+            catch (Exception ex)
+            {
+                SafeClosePort();
+                throw new Exception($"Command sent failed: {ex.Message}");
+            }
         }
     }
 
     public string Query(string command)
     {
-        EnsureConnected();
-
-        try
+        lock (_serialLock)
         {
-            _port.DiscardInBuffer();
-            _port.WriteLine(command);
-            return _port.ReadLine();
-        }
-        catch (TimeoutException)
-        {
-            return "TIMEOUT";
-        }
-        catch (Exception ex)
-        {
-            SafeClosePort();
-            throw new Exception($"Query failed: {ex.Message}");
+            EnsureConnected();
+            try
+            {
+                _port.DiscardInBuffer();
+                _port.WriteLine(command);
+                return _port.ReadLine();
+            }
+            catch (TimeoutException)
+            {
+                Logger.Debug($"Query Timeout: {command}");
+                return "TIMEOUT";
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Serial Query Error [{command}]", ex);
+                throw new Exception($"Query failed: {ex.Message}");
+            }
         }
     }
 
+
     private void EnsureConnected()
     {
-        if (_port == null || !_port.IsOpen)
-            throw new InvalidOperationException("Serial port is not connected.");
+        lock (_serialLock)
+        {
+            bool needReconnect = (_port == null || !_port.IsOpen);
+            if (!needReconnect)
+            {
+                try
+                {
+                    _port.WriteLine("*CLS");
+                }
+                catch
+                {
+                    needReconnect = true;
+                }
+            }
+            if (needReconnect)
+            {
+                Logger.Log("Attempt was made to automatically reconnect...", "WARN");
+                try
+                {
+                    Connect(null, 9600);
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception($"Serial port is not connected and auto-reconnect failed: {ex.Message}");
+                }
+            }
+        }
     }
 
     public void Dispose()
