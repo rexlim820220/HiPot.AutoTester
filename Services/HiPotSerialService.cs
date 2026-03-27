@@ -109,6 +109,7 @@ public class HiPotSerialService : IInstrumentCommunication, IDisposable
             EnsureConnected();
             try
             {
+                _port.DiscardInBuffer();
                 _port.WriteLine(command);
             }
             catch (Exception ex)

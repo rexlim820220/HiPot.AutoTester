@@ -57,6 +57,9 @@ namespace HiPot.AutoTester.Desktop.UI
                         serialService.Connect(null, 9600);
                     }
 
+                    serialService.SendCommand(ScpiCommands.ClearStatus);
+                    await Task.Delay(200);
+
                     bool needRetry = true;
                     while (needRetry)
                     {
@@ -85,6 +88,11 @@ namespace HiPot.AutoTester.Desktop.UI
                         {
                             DialogResult ra = MessageBox.Show("Restart again?", "Test Fail", MessageBoxButtons.YesNo);
                             needRetry = (ra == DialogResult.Yes);
+                            if (needRetry)
+                            {
+                                serialService.SendCommand(ScpiCommands.ClearStatus);
+                                await Task.Delay(100);
+                            }
                         }
                         else
                         {
@@ -391,7 +399,7 @@ namespace HiPot.AutoTester.Desktop.UI
                 }
 
                 Logger.Debug("Connecting to SFIS server...", "INFO");
-                using (var initTimeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(5)))
+                using (var initTimeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(20)))
                 {
                     using (var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(initTimeoutCts.Token, _cts.Token))
                     {
