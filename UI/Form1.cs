@@ -433,7 +433,7 @@ namespace HiPot.AutoTester.Desktop.UI
             }
             catch (Exception ex)
             {
-                Program.HasError = true;
+                //Program.HasError = true;
                 Logger.Log($"Initialization Error: {ex.Message}", "ERROR");
                 Logger.LogError("Initialization Error", ex);
                 MessageBox.Show(

@@ -69,8 +69,15 @@ namespace HiPot.AutoTester.Desktop.Interfaces
         {
             if (client != null)
             {
-                if (client.IsConnected) client.Disconnect();
-                client.Dispose();
+                try
+                {
+                    client.Disconnect();
+                }
+                finally
+                {
+                    client.Dispose();
+                    client = null;
+                }
             }
         }
     }
