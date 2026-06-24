@@ -133,6 +133,7 @@ public class HiPotSerialService : IInstrumentCommunication, IDisposable
             }
             catch (TimeoutException)
             {
+                SafeClosePort();
                 Logger.Debug($"Query Timeout: {command}");
                 return "TIMEOUT";
             }
@@ -170,6 +171,7 @@ public class HiPotSerialService : IInstrumentCommunication, IDisposable
                 }
                 catch (Exception ex)
                 {
+                    SafeClosePort();
                     throw new Exception($"Serial port is not connected and auto-reconnect failed: {ex.Message}");
                 }
             }

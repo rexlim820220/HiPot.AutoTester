@@ -7,6 +7,7 @@ namespace HiPot.AutoTester.Desktop
 {
     static class Program
     {
+        public static bool HasError { get; set; } = false;
         /// <summary>
         /// 應用程式的主要進入點。
         /// </summary>
@@ -20,6 +21,10 @@ namespace HiPot.AutoTester.Desktop
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new FormMain());
             System.Diagnostics.Debug.WriteLine("\n");
+            if (HasError)
+                Logger.Log("===== Exit with Error =====", "ERROR");
+            else
+                Logger.Log("===== Successfully Exit =====", "INFO");
         }
     }
 }

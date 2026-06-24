@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using System.Configuration;
 using System.Threading.Tasks;
 using HiPot.AutoTester.Desktop.Helpers;
 using HiPot.AutoTester.Desktop.sfistspwebservice;
@@ -51,7 +52,10 @@ namespace HiPot.AutoTester.Desktop.Services
             _parameters = parameters ?? new Sfis_Upload_Para();
             //Web Services
             _soapClient = new SFISTSPWebService();
-            _soapClient.Url = "http://pty-sfwspd-n1.sfis.pegatroncorp.com/sfiswebservice/sfistspwebservice.asmx";
+            string url = System.Configuration.ConfigurationManager.AppSettings["Sfis.Url"];
+            _soapClient.Url = !string.IsNullOrEmpty(url)
+                      ? url
+                      : "http://pty-sfwspd-n1.sfis.pegatroncorp.com/sfiswebservice/sfistspwebservice.asmx";
             _soapClient.UseDefaultCredentials = true;
             _soapClient.Timeout = 5000;
         }
@@ -138,6 +142,7 @@ namespace HiPot.AutoTester.Desktop.Services
             }
             try
             {
+                _soapClient.Timeout = 5000;
                 string response = await Task.Run(() => _soapClient.WTSP_CHKROUTE(
                     programId: _parameters.ProgramId,
                     programPassword: _parameters.ProgramPassword,
@@ -167,6 +172,7 @@ namespace HiPot.AutoTester.Desktop.Services
         {
             try
             {
+                _soapClient.Timeout = 8000;
                 string response = await Task.Run(() => _soapClient.WTSP_RESULT(
                     programId: _parameters.ProgramId,
                     programPassword: _parameters.ProgramPassword,

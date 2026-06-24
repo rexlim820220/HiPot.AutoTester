@@ -73,6 +73,7 @@ namespace HiPot.AutoTester.Desktop.Interfaces
                 {
                     client.Disconnect();
                 }
+                catch { }
                 finally
                 {
                     client.Dispose();
